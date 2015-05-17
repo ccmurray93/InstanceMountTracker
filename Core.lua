@@ -44,6 +44,15 @@ local INSTANCE_SIZE = {
     twentyFive = "25 man"
 }
 
+local EXPANSION = {
+    classic = "Classic",
+    bc = "Burning Crusade",
+    wrath = "Wrath of the Lich King",
+    cata = "Cataclysm",
+    mop = "Mists of Pandaria",
+    wod = "Warlords of Draenor",
+}
+
 local INSTANCE_MOUNTS = {
     -- Vanilla
     ["Rivendare's Deathcharger"] = {
@@ -51,7 +60,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Lord Aurius Rivendare",
         instanceType =       INSTANCE_TYPE.dungeon,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.classic
     },
 
     ["Blue Qiraji Battle Tank"] = {
@@ -59,7 +69,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Trash",
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.classic
     },
 
     ["Green Qiraji Battle Tank"] = {
@@ -67,7 +78,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Trash",
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.classic
     },
 
     ["Yellow Qiraji Battle Tank"] = {
@@ -75,7 +87,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Trash",
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.classic
     },
 
     ["Red Qiraji Battle Tank"] = {
@@ -83,7 +96,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Trash",
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.classic
     },
 
 
@@ -93,7 +107,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Anzu",
         instanceType =       INSTANCE_TYPE.dungeon,
         instanceDifficulty = INSTANCE_DIFFICULTY.heroic,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.bc
     },
 
     ["Swift White Hawkstrider"] = {
@@ -101,7 +116,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Kael'thas Sunstrider",
         instanceType =       INSTANCE_TYPE.dungeon,
         instanceDifficulty = INSTANCE_DIFFICULTY.heroic,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.bc
     },
 
     ["Fiery Warhorse"] = {
@@ -109,7 +125,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Attumen the Huntsman",
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.bc
     },
 
     ["Ashes of Al'ar"] = {
@@ -117,7 +134,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Kael'thas Sunstrider",
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.bc
     },
 
 
@@ -127,7 +145,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Skadi the Ruthless",
         instanceType =       INSTANCE_TYPE.dungeon,
         instanceDifficulty = INSTANCE_DIFFICULTY.heroic,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.wrath
     },
 
     ["Bronze Drake"] = {
@@ -135,7 +154,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Infinite Corruptor",
         instanceType =       INSTANCE_TYPE.dungeon,
         instanceDifficulty = INSTANCE_DIFFICULTY.heroic,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.wrath
     },
 
     ["Grand Black War Mammoth"] = {
@@ -143,7 +163,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "All 4 Bosses",
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.wrath
     },
 
     ["Azure Drake"] = {
@@ -151,7 +172,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Malygos",
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.wrath
     },
 
     ["Blue Drake"] = {
@@ -159,7 +181,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Malygos",
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.wrath
     },
 
     ["Black Drake"] = {
@@ -167,7 +190,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Sartharion (3 Drakes)",
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.ten
+        instanceSize =       INSTANCE_SIZE.ten,
+        expansion =          EXPANSION.wrath
     },
 
     ["Twilight Drake"] = {
@@ -175,7 +199,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Sartharion (3 Drakes)",
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.twentyFive
+        instanceSize =       INSTANCE_SIZE.twentyFive,
+        expansion =          EXPANSION.wrath
     },
 
     ["Onyxian Drake"] = {
@@ -183,7 +208,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Onyxia",
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.wrath
     },
 
     ["Mimiron's Head"] = {
@@ -191,7 +217,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Yogg-Saron (No Watchers)",
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.twentyFive
+        instanceSize =       INSTANCE_SIZE.twentyFive,
+        expansion =          EXPANSION.wrath
     },
 
     ["Invincible"] = {
@@ -199,7 +226,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "The Lich King",
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.heroic,
-        instanceSize =       INSTANCE_SIZE.twentyFive
+        instanceSize =       INSTANCE_SIZE.twentyFive,
+        expansion =          EXPANSION.wrath
     },
 
 
@@ -209,7 +237,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Altairus",
         instanceType =       INSTANCE_TYPE.dungeon,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.cata
     },
 
     ["Vitreous Stone Drake"] = {
@@ -217,7 +246,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Slabhide",
         instanceType =       INSTANCE_TYPE.dungeon,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.cata
     },
 
     ["Swift Zulian Panther"] = {
@@ -225,7 +255,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "High Priestess Kilnara",
         instanceType =       INSTANCE_TYPE.dungeon,
         instanceDifficulty = INSTANCE_DIFFICULTY.heroic,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.cata
     },
 
     ["Armored Razzashi Raptor"] = {
@@ -233,7 +264,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Bloodlord Mandokir",
         instanceType =       INSTANCE_TYPE.dungeon,
         instanceDifficulty = INSTANCE_DIFFICULTY.heroic,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.cata
     },
 
     ["Amani Battle Bear"] = {
@@ -241,7 +273,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "(Timed Reward)",
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.heroic,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.cata
     },
 
     ["Drake of the South Wind"] = {
@@ -249,7 +282,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Al'Akir",
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.cata
     },
 
     ["Flametalon of Alysrazor"] = {
@@ -257,7 +291,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Alysrazor",
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.cata
     },
 
     ["Pureblood Fire Hawk"] = {
@@ -265,7 +300,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Ragnaros",
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.cata
     },
 
     ["Experiment 12-B"] = {
@@ -273,7 +309,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Ultraxion",
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.cata
     },
 
     ["Blazing Drake"] = {
@@ -281,7 +318,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Deathwing",
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.cata
     },
 
     ["Life-Binder's Handmaiden"] = {
@@ -289,7 +327,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Deathwing",
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.heroic,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.cata
     },
 
 
@@ -299,7 +338,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Sha of Anger",
         instanceType =       INSTANCE_TYPE.world,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.mop
     },
 
     ["Son of Galleon"] = {
@@ -307,7 +347,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Galleon",
         instanceType =       INSTANCE_TYPE.world,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.mop
     },
 
     ["Thundering Cobalt Cloud Serpent"] = {
@@ -315,7 +356,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Nalak",
         instanceType =       INSTANCE_TYPE.world,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.mop
     },
 
     ["Cobalt Primordial Direhorn"] = {
@@ -323,7 +365,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Oondasta",
         instanceType =       INSTANCE_TYPE.world,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.mop
     },
 
     ["Astral Cloud Serpent"] = {
@@ -331,7 +374,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Elegon",
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.mop
     },
 
     ["Spawn of Horridon"] = {
@@ -339,7 +383,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Horridon",
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.mop
     },
 
     ["Clutch of Ji-Kun"] = {
@@ -347,7 +392,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Ji-Kun",
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.mop
     },
 
     ["Kor'kron Juggernaut"] = {
@@ -355,7 +401,8 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Garrosh Hellscream",
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.mythic,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.mop
     },
 
     -- Warlords of Draenor
@@ -364,10 +411,61 @@ local INSTANCE_MOUNTS = {
         dropsFrom =          "Rukhmar",
         instanceType =       INSTANCE_TYPE.world,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all
+        instanceSize =       INSTANCE_SIZE.all,
+        expansion =          EXPANSION.wod
     }
 }
 
+function MOUNT_SECTIONS()
+    return {
+        [EXPANSION.classic] = {
+            [INSTANCE_TYPE.dungeon] = {
+                [INSTANCE_DIFFICULTY.all] = {}
+            },
+            [INSTANCE_TYPE.raid] = {
+                [INSTANCE_DIFFICULTY.all] = {}
+            }
+        },
+        [EXPANSION.bc] = {
+            [INSTANCE_TYPE.dungeon] = {
+                [INSTANCE_DIFFICULTY.heroic] = {}
+            },
+            [INSTANCE_TYPE.raid] = {
+                [INSTANCE_DIFFICULTY.all] = {}
+            }
+        },
+        [EXPANSION.wrath] = {
+            [INSTANCE_TYPE.dungeon] = {
+                [INSTANCE_DIFFICULTY.heroic] = {}
+            },
+            [INSTANCE_TYPE.raid] = {
+                [INSTANCE_DIFFICULTY.all] = {},
+                [INSTANCE_DIFFICULTY.heroic] = {}
+            }
+        },
+        [EXPANSION.cata] = {
+            [INSTANCE_TYPE.dungeon] = {
+                [INSTANCE_DIFFICULTY.all] = {},
+                [INSTANCE_DIFFICULTY.heroic] = {},
+            },
+            [INSTANCE_TYPE.raid] = {
+                [INSTANCE_DIFFICULTY.all] = {},
+                [INSTANCE_DIFFICULTY.heroic] = {}
+            }
+        },
+        [EXPANSION.mop] = {
+            [INSTANCE_TYPE.raid] = {
+                [INSTANCE_DIFFICULTY.all] = {},
+                [INSTANCE_DIFFICULTY.heroic] = {},
+                [INSTANCE_DIFFICULTY.mythic] = {},
+            },
+            [INSTANCE_TYPE.world] = {},
+        },
+        [EXPANSION.wod] = {
+            [INSTANCE_TYPE.world] = {},
+        }
+    }
+end
 
 local ZONES = {}
 
@@ -433,7 +531,8 @@ function IMCAddon:IconOnEnter(frame)
     self:ScanSavedInstances()
 
     -- Acquire a tooltip with 3 columns, respectively aligned to left, center and right
-    local tooltip = LibQTip:Acquire("IMCTooltip", 3, "LEFT", "LEFT", "LEFT")
+    -- local tooltip = LibQTip:Acquire("IMCTooltip", 3, "LEFT", "LEFT", "LEFT")
+    local tooltip = LibQTip:Acquire("IMCTooltip", 2, "LEFT", "CENTER")
     self.tooltip = tooltip
 
     -- Add an header filling only the first two columns
@@ -442,106 +541,212 @@ function IMCAddon:IconOnEnter(frame)
     -- Add an new line, using all columns
     -- tooltip:AddLine("Hello", "World", "!")
 
-    local normalDungeons = {}
-    local heroicDungeons = {}
-    local raids = {}
-    local world = {}
+    -- local normalDungeons = {}
+    -- local heroicDungeons = {}
+    -- local raids = {}
+    -- local world = {}
 
-    local mountSections = {
-        [INSTANCE_TYPE.dungeon] = {
-            [INSTANCE_DIFFICULTY.all] = {},
-            [INSTANCE_DIFFICULTY.heroic] = {},
-        },
-        [INSTANCE_TYPE.raid] = {
-            [INSTANCE_DIFFICULTY.all] = {},
-            [INSTANCE_DIFFICULTY.heroic] = {},
-            [INSTANCE_DIFFICULTY.mythic] = {},
-        },
-        [INSTANCE_TYPE.world] = {},
-    }
+
     -- for k,v in pairs(INSTANCE_TYPE) do
-    --     -- table.insert(mountSections, v)
-    --     mountSections[v] = {}
+    --     -- table.insert(MOUNT_SECTIONS, v)
+    --     MOUNT_SECTIONS[v] = {}
     --     for i,j in pairs(INSTANCE_DIFFICULTY) do
-    --         -- table.insert(mountSections[v], j)
-    --         mountSections[v][j] = {}
+    --         -- table.insert(MOUNT_SECTIONS[v], j)
+    --         MOUNT_SECTIONS[v][j] = {}
     --     end
     -- end
 
+    local mountSections = MOUNT_SECTIONS()
 
-
-
-    for k,v in pairs(ZONES) do
-        -- local availableMounts = {}
-        for i,m in pairs(v.mounts) do
-            if not INSTANCE_MOUNTS[m].collected then
-                local mount = INSTANCE_MOUNTS[m]
-                if not v.killedBosses[mount.dropsFrom] then
-                    if mount.instanceType == INSTANCE_TYPE.dungeon then
-                        if mount.instanceDifficulty == INSTANCE_DIFFICULTY.all then
-                            mountSections[INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.all][m] = mount
-                        elseif mount.instanceDifficulty == INSTANCE_DIFFICULTY.heroic then
-                            mountSections[INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.heroic][m] = mount
-                        end
-                    elseif mount.instanceType == INSTANCE_TYPE.raid then
-                        if mount.instanceDifficulty == INSTANCE_DIFFICULTY.all then
-                            mountSections[INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.all][m] = mount
-                        elseif mount.instanceDifficulty == INSTANCE_DIFFICULTY.heroic then
-                            mountSections[INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.heroic][m] = mount
-                        elseif mount.instanceDifficulty == INSTANCE_DIFFICULTY.mythic then
-                            mountSections[INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.mythic][m] = mount
-                        end
-                    elseif mount.instanceType == INSTANCE_TYPE.world then
-                        mountSections[INSTANCE_TYPE.world][m] = mount
+    for name,mount in pairs(INSTANCE_MOUNTS) do
+        if not mount.collected then
+            if mount.instanceType == INSTANCE_TYPE.dungeon then
+                if mount.instanceDifficulty == INSTANCE_DIFFICULTY.all then
+                    if not mountSections[mount.expansion][INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.all][mount.zone] then
+                        mountSections[mount.expansion][INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.all][mount.zone] = {}
                     end
+                    mountSections[mount.expansion][INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.all][mount.zone][name] = mount
+                elseif mount.instanceDifficulty == INSTANCE_DIFFICULTY.heroic then
+                    if not mountSections[mount.expansion][INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.heroic][mount.zone] then
+                        mountSections[mount.expansion][INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.heroic][mount.zone] = {}
+                    end
+                    mountSections[mount.expansion][INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.heroic][mount.zone][name] = mount
                 end
+            elseif mount.instanceType == INSTANCE_TYPE.raid then
+                if mount.instanceDifficulty == INSTANCE_DIFFICULTY.all then
+                    if not mountSections[mount.expansion][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.all][mount.zone] then
+                        mountSections[mount.expansion][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.all][mount.zone] = {}
+                    end
+                    mountSections[mount.expansion][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.all][mount.zone][name] = mount
+                elseif mount.instanceDifficulty == INSTANCE_DIFFICULTY.heroic then
+                    if not mountSections[mount.expansion][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.heroic][mount.zone] then
+                        mountSections[mount.expansion][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.heroic][mount.zone] = {}
+                    end
+                    mountSections[mount.expansion][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.heroic][mount.zone][name] = mount
+                elseif mount.instanceDifficulty == INSTANCE_DIFFICULTY.mythic then
+                    if not mountSections[mount.expansion][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.mythic][mount.zone] then
+                        mountSections[mount.expansion][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.mythic][mount.zone] = {}
+                    end
+                    mountSections[mount.expansion][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.mythic][mount.zone][name] = mount
+                end
+            elseif mount.instanceType == INSTANCE_TYPE.world then
+                if not mountSections[mount.expansion][INSTANCE_TYPE.world][mount.zone] then
+                    mountSections[mount.expansion][INSTANCE_TYPE.world][mount.zone] = {}
+                end
+                mountSections[mount.expansion][INSTANCE_TYPE.world][mount.zone][name] = mount
             end
         end
     end
 
-    IMC_MOUNT_SECTIONS = mountSections
+    -- IMC_MOUNT_SECTIONS = mountSections
 
-    if next(mountSections[INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.all]) ~= nil then
-        tooltip:AddHeader("Dungeon (Normal)", "Boss", "Mount")
-        for k,v in pairs(mountSections[INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.all]) do
-            tooltip:AddLine(v.zone, v.dropsFrom, k)
+    if next(mountSections[EXPANSION.classic][INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.all]) ~= nil then
+        tooltip:AddSeparator(2, 0, 0, 0, 0)
+        tooltip:AddHeader(EXPANSION.classic..": "..INSTANCE_TYPE.dungeon)
+        for zoneName,zone in pairs(mountSections[EXPANSION.classic][INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.all]) do
+            tooltip:AddLine(zoneName)
         end
     end
-    tooltip:AddSeparator(5, 0, 0, 0, 0)
-    if next(mountSections[INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.heroic]) ~= nil then
-        tooltip:AddHeader("Dungeon (Heroic)", "Boss", "Mount")
-        for k,v in pairs(mountSections[INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.heroic]) do
-            tooltip:AddLine(v.zone, v.dropsFrom, k)
+    if next(mountSections[EXPANSION.classic][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.all]) ~= nil then
+        tooltip:AddSeparator(2, 0, 0, 0, 0)
+        tooltip:AddHeader(EXPANSION.classic..": "..INSTANCE_TYPE.raid)
+        for zoneName,zone in pairs(mountSections[EXPANSION.classic][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.all]) do
+            tooltip:AddLine(zoneName)
         end
     end
-    tooltip:AddSeparator(5, 0, 0, 0, 0)
-    if next(mountSections[INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.all]) ~= nil then
-        tooltip:AddHeader("Raid (All)", "Boss", "Mount")
-        for k,v in pairs(mountSections[INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.all]) do
-            tooltip:AddLine(v.zone, v.dropsFrom, k)
+
+    if next(mountSections[EXPANSION.bc][INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.heroic]) ~= nil then
+        tooltip:AddSeparator(2, 0, 0, 0, 0)
+        tooltip:AddHeader(EXPANSION.bc..": "..INSTANCE_TYPE.dungeon)
+        for zoneName,zone in pairs(mountSections[EXPANSION.bc][INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.heroic]) do
+            tooltip:AddLine(zoneName.." ("..INSTANCE_DIFFICULTY.heroic..")")
         end
     end
-    tooltip:AddSeparator(5, 0, 0, 0, 0)
-    if next(mountSections[INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.heroic]) ~= nil then
-        tooltip:AddHeader("Raid (Heroic)", "Boss", "Mount")
-        for k,v in pairs(mountSections[INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.heroic]) do
-            tooltip:AddLine(v.zone, v.dropsFrom, k)
+    if next(mountSections[EXPANSION.bc][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.all]) ~= nil then
+        tooltip:AddSeparator(2, 0, 0, 0, 0)
+        tooltip:AddHeader(EXPANSION.bc..": "..INSTANCE_TYPE.raid)
+        for zoneName,zone in pairs(mountSections[EXPANSION.bc][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.all]) do
+            tooltip:AddLine(zoneName)
         end
     end
-    tooltip:AddSeparator(5, 0, 0, 0, 0)
-    if next(mountSections[INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.mythic]) ~= nil then
-        tooltip:AddHeader("Raid (Mythic)", "Boss", "Mount")
-        for k,v in pairs(mountSections[INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.mythic]) do
-            tooltip:AddLine(v.zone, v.dropsFrom, k)
+
+    if next(mountSections[EXPANSION.wrath][INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.heroic]) ~= nil then
+        tooltip:AddSeparator(2, 0, 0, 0, 0)
+        tooltip:AddHeader(EXPANSION.wrath..": "..INSTANCE_TYPE.dungeon)
+        for zoneName,zone in pairs(mountSections[EXPANSION.wrath][INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.heroic]) do
+            tooltip:AddLine(zoneName.." ("..INSTANCE_DIFFICULTY.heroic..")")
         end
     end
-    tooltip:AddSeparator(5, 0, 0, 0, 0)
-    if next(mountSections[INSTANCE_TYPE.world]) ~= nil then
-        tooltip:AddHeader("World", "Boss", "Mount")
-        for k,v in pairs(mountSections[INSTANCE_TYPE.world]) do
-            tooltip:AddLine(v.zone, v.dropsFrom, k)
+    if next(mountSections[EXPANSION.wrath][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.all]) ~= nil or
+       next(mountSections[EXPANSION.wrath][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.heroic]) ~= nil then
+        tooltip:AddSeparator(2, 0, 0, 0, 0)
+        tooltip:AddHeader(EXPANSION.wrath..": "..INSTANCE_TYPE.raid)
+        for zoneName,zone in pairs(mountSections[EXPANSION.wrath][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.all]) do
+            tooltip:AddLine(zoneName)
+        end
+        for zoneName,zone in pairs(mountSections[EXPANSION.wrath][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.heroic]) do
+            tooltip:AddLine(zoneName.." ("..INSTANCE_DIFFICULTY.heroic..")")
         end
     end
+
+    if next(mountSections[EXPANSION.cata][INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.all]) ~= nil or
+       next(mountSections[EXPANSION.cata][INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.heroic]) ~= nil then
+        tooltip:AddSeparator(2, 0, 0, 0, 0)
+        tooltip:AddHeader(EXPANSION.cata..": "..INSTANCE_TYPE.dungeon)
+        for zoneName,zone in pairs(mountSections[EXPANSION.cata][INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.all]) do
+            tooltip:AddLine(zoneName)
+        end
+        for zoneName,zone in pairs(mountSections[EXPANSION.cata][INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.heroic]) do
+            tooltip:AddLine(zoneName.." ("..INSTANCE_DIFFICULTY.heroic..")")
+        end
+    end
+    if next(mountSections[EXPANSION.cata][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.all]) ~= nil or
+       next(mountSections[EXPANSION.cata][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.heroic]) ~= nil then
+        tooltip:AddSeparator(2, 0, 0, 0, 0)
+        tooltip:AddHeader(EXPANSION.cata..": "..INSTANCE_TYPE.raid)
+        for zoneName,zone in pairs(mountSections[EXPANSION.cata][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.all]) do
+            tooltip:AddLine(zoneName)
+        end
+        for zoneName,zone in pairs(mountSections[EXPANSION.cata][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.heroic]) do
+            tooltip:AddLine(zoneName.." ("..INSTANCE_DIFFICULTY.heroic..")")
+        end
+    end
+
+    if next(mountSections[EXPANSION.mop][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.all]) ~= nil or
+       next(mountSections[EXPANSION.mop][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.heroic]) ~= nil or
+       next(mountSections[EXPANSION.mop][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.mythic]) ~= nil then
+        tooltip:AddSeparator(2, 0, 0, 0, 0)
+        tooltip:AddHeader(EXPANSION.mop..": "..INSTANCE_TYPE.raid)
+        for zoneName,zone in pairs(mountSections[EXPANSION.mop][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.all]) do
+            tooltip:AddLine(zoneName)
+        end
+        for zoneName,zone in pairs(mountSections[EXPANSION.mop][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.heroic]) do
+            tooltip:AddLine(zoneName.." ("..INSTANCE_DIFFICULTY.heroic..")")
+        end
+        for zoneName,zone in pairs(mountSections[EXPANSION.mop][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.mythic]) do
+            tooltip:AddLine(zoneName.." ("..INSTANCE_DIFFICULTY.mythic..")")
+        end
+    end
+    if next(mountSections[EXPANSION.mop][INSTANCE_TYPE.world]) ~= nil then
+        tooltip:AddSeparator(2, 0, 0, 0, 0)
+        tooltip:AddHeader(EXPANSION.mop..": "..INSTANCE_TYPE.world)
+        for zoneName,zone in pairs(mountSections[EXPANSION.mop][INSTANCE_TYPE.world]) do
+            tooltip:AddLine(zoneName)
+        end
+    end
+
+    if next(mountSections[EXPANSION.wod][INSTANCE_TYPE.world]) ~= nil then
+        tooltip:AddSeparator(2, 0, 0, 0, 0)
+        tooltip:AddHeader(EXPANSION.wod..": "..INSTANCE_TYPE.world)
+        for zoneName,zone in pairs(mountSections[EXPANSION.wod][INSTANCE_TYPE.world]) do
+            tooltip:AddLine(zoneName)
+        end
+    end
+
+
+    -- if next(MOUNT_SECTIONS[INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.all]) ~= nil then
+    --     tooltip:AddHeader("Dungeon (Normal)", "Boss", "Mount")
+    --     for k,v in pairs(MOUNT_SECTIONS[INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.all]) do
+    --         tooltip:AddLine(v.zone, v.dropsFrom, k)
+    --     end
+    -- end
+    -- tooltip:AddSeparator(5, 0, 0, 0, 0)
+    -- if next(MOUNT_SECTIONS[INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.heroic]) ~= nil then
+    --     tooltip:AddHeader("Dungeon (Heroic)", "Boss", "Mount")
+    --     for k,v in pairs(MOUNT_SECTIONS[INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.heroic]) do
+    --         tooltip:AddLine(v.zone, v.dropsFrom, k)
+    --     end
+    -- end
+    -- tooltip:AddSeparator(5, 0, 0, 0, 0)
+    -- if next(MOUNT_SECTIONS[INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.all]) ~= nil then
+    --     tooltip:AddHeader("Raid (All)", "Boss", "Mount")
+    --     for k,v in pairs(MOUNT_SECTIONS[INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.all]) do
+    --         tooltip:AddLine(v.zone, v.dropsFrom, k)
+    --     end
+    -- end
+    -- tooltip:AddSeparator(5, 0, 0, 0, 0)
+    -- if next(MOUNT_SECTIONS[INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.heroic]) ~= nil then
+    --     tooltip:AddHeader("Raid (Heroic)", "Boss", "Mount")
+    --     for k,v in pairs(MOUNT_SECTIONS[INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.heroic]) do
+    --         tooltip:AddLine(v.zone, v.dropsFrom, k)
+    --     end
+    -- end
+    -- tooltip:AddSeparator(5, 0, 0, 0, 0)
+    -- if next(MOUNT_SECTIONS[INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.mythic]) ~= nil then
+    --     tooltip:AddHeader("Raid (Mythic)", "Boss", "Mount")
+    --     for k,v in pairs(MOUNT_SECTIONS[INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.mythic]) do
+    --         tooltip:AddLine(v.zone, v.dropsFrom, k)
+    --     end
+    -- end
+    -- tooltip:AddSeparator(5, 0, 0, 0, 0)
+    -- if next(MOUNT_SECTIONS[INSTANCE_TYPE.world]) ~= nil then
+    --     tooltip:AddHeader("World", "Boss", "Mount")
+    --     for k,v in pairs(MOUNT_SECTIONS[INSTANCE_TYPE.world]) do
+    --         tooltip:AddLine(v.zone, v.dropsFrom, k)
+    --     end
+    -- end
+
+
 
 
     -- Use smart anchoring code to anchor the tooltip to our frame
