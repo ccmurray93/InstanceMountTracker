@@ -271,7 +271,7 @@ local INSTANCE_MOUNTS = {
     ["Amani Battle Bear"] = {
         zone =               "Zul'Aman",
         dropsFrom =          "(Timed Reward)",
-        instanceType =       INSTANCE_TYPE.raid,
+        instanceType =       INSTANCE_TYPE.dungeon,
         instanceDifficulty = INSTANCE_DIFFICULTY.heroic,
         instanceSize =       INSTANCE_SIZE.all,
         expansion =          EXPANSION.cata
@@ -496,6 +496,7 @@ function IMCAddon:OnInitialize()
         local z = v.instanceType == INSTANCE_TYPE.world and INSTANCE_TYPE.world or v.zone
         if not ZONES[z] then
             ZONES[z] = {
+                name = z,
                 saved = false,
                 killedBosses = {},
                 mounts = {}
@@ -559,7 +560,7 @@ function IMCAddon:IconOnEnter(frame)
     local mountSections = MOUNT_SECTIONS()
 
     for name,mount in pairs(INSTANCE_MOUNTS) do
-        if not mount.collected then
+        if not mount.collected or DEBUG then
             if mount.instanceType == INSTANCE_TYPE.dungeon then
                 if mount.instanceDifficulty == INSTANCE_DIFFICULTY.all then
                     if not mountSections[mount.expansion][INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.all][mount.zone] then
@@ -612,72 +613,110 @@ function IMCAddon:IconOnEnter(frame)
         tooltip:AddHeader("Daily", UnitName("player"))
     end
 
-    if classicDungeonAll then
-        tooltip:AddSeparator(2, 0, 0, 0, 0)
-        tooltip:AddHeader(EXPANSION.classic..": "..INSTANCE_TYPE.dungeon)
-        for zoneName,zone in pairs(mountSections[EXPANSION.classic][INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.all]) do
-            local totalBosses = countTable(zone)
+    function addZoneRow(sections, exp, itype, diff)
+        local alphaZoneList = {}
+        -- IMCAddon:Debug(sections)
+        -- IMCAddon:Debug(exp)
+        -- IMCAddon:Debug(type)
+        -- IMCAddon:Debug(diff)
+        local section = itype == INSTANCE_TYPE.world and sections[exp][itype] or sections[exp][itype][diff]
+        for name,value in pairs(section) do
+            alphaZoneList[#alphaZoneList+1] = name
+        end
+        table.sort(alphaZoneList)
+        for k,zoneName in pairs(alphaZoneList) do
+            local totalBosses = countTable(section[zoneName])
             local killedBosses = 0
-            for k,v in pairs(zone) do
-                if ZONES[v.zone].killedBosses[v.dropsFrom] then
+            for k,v in pairs(section[zoneName]) do
+                IMC_V = section
+                local z = itype == INSTANCE_TYPE.world and INSTANCE_TYPE.world or v.zone
+                if ZONES[z].killedBosses[v.dropsFrom] then
                     killedBosses = killedBosses + 1
                 end
             end
-            tooltip:AddLine("  "..zoneName, killedBosses.."/"..totalBosses)
+            local name = "  "..zoneName
+            if diff == INSTANCE_DIFFICULTY.heroic or diff == INSTANCE_DIFFICULTY.mythic then
+                name = name .. " (" .. diff .. ")"
+            end
+            tooltip:AddLine(name, killedBosses.."/"..totalBosses)
         end
+    end
+
+    if classicDungeonAll then
+        tooltip:AddSeparator(2, 0, 0, 0, 0)
+        tooltip:AddHeader(EXPANSION.classic..": "..INSTANCE_TYPE.dungeon)
+        addZoneRow(mountSections, EXPANSION.classic, INSTANCE_TYPE.dungeon, INSTANCE_DIFFICULTY.all)
+        -- local alphaZoneList = {}
+        -- for name,value in pairs(mountSections[EXPANSION.classic][INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.all]) do
+        --     alphaZoneList[#alphaZoneList+1] = name
+        -- end
+        -- for k,zoneName in pairs(alphaZoneList) do
+        --     local totalBosses = countTable(mountSections[EXPANSION.classic][INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.all][zoneName])
+        --     local killedBosses = 0
+        --     for k,v in pairs(mountSections[EXPANSION.classic][INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.all][zoneName]) do
+        --         if ZONES[v.zone].killedBosses[v.dropsFrom] then
+        --             killedBosses = killedBosses + 1
+        --         end
+        --     end
+        --     tooltip:AddLine("  "..zoneName, killedBosses.."/"..totalBosses)
+        -- end
     end
     if bcDungeonHeroic then
         tooltip:AddSeparator(2, 0, 0, 0, 0)
         tooltip:AddHeader(EXPANSION.bc..": "..INSTANCE_TYPE.dungeon)
-        for zoneName,zone in pairs(mountSections[EXPANSION.bc][INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.heroic]) do
-            local totalBosses = countTable(zone)
-            local killedBosses = 0
-            for k,v in pairs(zone) do
-                if ZONES[v.zone].killedBosses[v.dropsFrom] then
-                    killedBosses = killedBosses + 1
-                end
-            end
-            tooltip:AddLine("  "..zoneName.." ("..INSTANCE_DIFFICULTY.heroic..")", killedBosses.."/"..totalBosses)
-        end
+        addZoneRow(mountSections, EXPANSION.bc, INSTANCE_TYPE.dungeon, INSTANCE_DIFFICULTY.heroic)
+        -- for zoneName,zone in pairs(mountSections[EXPANSION.bc][INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.heroic]) do
+        --     local totalBosses = countTable(zone)
+        --     local killedBosses = 0
+        --     for k,v in pairs(zone) do
+        --         if ZONES[v.zone].killedBosses[v.dropsFrom] then
+        --             killedBosses = killedBosses + 1
+        --         end
+        --     end
+        --     tooltip:AddLine("  "..zoneName.." ("..INSTANCE_DIFFICULTY.heroic..")", killedBosses.."/"..totalBosses)
+        -- end
     end
     if wrathDungeonHeroic then
         tooltip:AddSeparator(2, 0, 0, 0, 0)
         tooltip:AddHeader(EXPANSION.wrath..": "..INSTANCE_TYPE.dungeon)
-        for zoneName,zone in pairs(mountSections[EXPANSION.wrath][INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.heroic]) do
-            local totalBosses = countTable(zone)
-            local killedBosses = 0
-            for k,v in pairs(zone) do
-                if ZONES[v.zone].killedBosses[v.dropsFrom] then
-                    killedBosses = killedBosses + 1
-                end
-            end
-            tooltip:AddLine("  "..zoneName.." ("..INSTANCE_DIFFICULTY.heroic..")", killedBosses.."/"..totalBosses)
-        end
+        addZoneRow(mountSections, EXPANSION.wrath, INSTANCE_TYPE.dungeon, INSTANCE_DIFFICULTY.heroic)
+        -- for zoneName,zone in pairs(mountSections[EXPANSION.wrath][INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.heroic]) do
+        --     local totalBosses = countTable(zone)
+        --     local killedBosses = 0
+        --     for k,v in pairs(zone) do
+        --         if ZONES[v.zone].killedBosses[v.dropsFrom] then
+        --             killedBosses = killedBosses + 1
+        --         end
+        --     end
+        --     tooltip:AddLine("  "..zoneName.." ("..INSTANCE_DIFFICULTY.heroic..")", killedBosses.."/"..totalBosses)
+        -- end
     end
     if cataDungeonAll or
        cataDungeonHeroic then
         tooltip:AddSeparator(2, 0, 0, 0, 0)
         tooltip:AddHeader(EXPANSION.cata..": "..INSTANCE_TYPE.dungeon)
-        for zoneName,zone in pairs(mountSections[EXPANSION.cata][INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.all]) do
-            local totalBosses = countTable(zone)
-            local killedBosses = 0
-            for k,v in pairs(zone) do
-                if ZONES[v.zone].killedBosses[v.dropsFrom] then
-                    killedBosses = killedBosses + 1
-                end
-            end
-            tooltip:AddLine("  "..zoneName, killedBosses.."/"..totalBosses)
-        end
-        for zoneName,zone in pairs(mountSections[EXPANSION.cata][INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.heroic]) do
-            local totalBosses = countTable(zone)
-            local killedBosses = 0
-            for k,v in pairs(zone) do
-                if ZONES[v.zone].killedBosses[v.dropsFrom] then
-                    killedBosses = killedBosses + 1
-                end
-            end
-            tooltip:AddLine("  "..zoneName.." ("..INSTANCE_DIFFICULTY.heroic..")", killedBosses.."/"..totalBosses)
-        end
+        addZoneRow(mountSections, EXPANSION.cata, INSTANCE_TYPE.dungeon, INSTANCE_DIFFICULTY.all)
+        -- for zoneName,zone in pairs(mountSections[EXPANSION.cata][INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.all]) do
+        --     local totalBosses = countTable(zone)
+        --     local killedBosses = 0
+        --     for k,v in pairs(zone) do
+        --         if ZONES[v.zone].killedBosses[v.dropsFrom] then
+        --             killedBosses = killedBosses + 1
+        --         end
+        --     end
+        --     tooltip:AddLine("  "..zoneName, killedBosses.."/"..totalBosses)
+        -- end
+        addZoneRow(mountSections, EXPANSION.cata, INSTANCE_TYPE.dungeon, INSTANCE_DIFFICULTY.heroic)
+        -- for zoneName,zone in pairs(mountSections[EXPANSION.cata][INSTANCE_TYPE.dungeon][INSTANCE_DIFFICULTY.heroic]) do
+        --     local totalBosses = countTable(zone)
+        --     local killedBosses = 0
+        --     for k,v in pairs(zone) do
+        --         if ZONES[v.zone].killedBosses[v.dropsFrom] then
+        --             killedBosses = killedBosses + 1
+        --         end
+        --     end
+        --     tooltip:AddLine("  "..zoneName.." ("..INSTANCE_DIFFICULTY.heroic..")", killedBosses.."/"..totalBosses)
+        -- end
     end
 
 
@@ -699,144 +738,155 @@ function IMCAddon:IconOnEnter(frame)
     if classicRaidAll then
         tooltip:AddSeparator(2, 0, 0, 0, 0)
         tooltip:AddHeader(EXPANSION.classic..": "..INSTANCE_TYPE.raid)
-        for zoneName,zone in pairs(mountSections[EXPANSION.classic][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.all]) do
-            local totalBosses = countTable(zone)
-            local killedBosses = 0
-            for k,v in pairs(zone) do
-                if ZONES[v.zone].killedBosses[v.dropsFrom] then
-                    killedBosses = killedBosses + 1
-                end
-            end
-            tooltip:AddLine("  "..zoneName, killedBosses.."/"..totalBosses)
-        end
+        addZoneRow(mountSections, EXPANSION.classic, INSTANCE_TYPE.raid, INSTANCE_DIFFICULTY.all)
+        -- for zoneName,zone in pairs(mountSections[EXPANSION.classic][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.all]) do
+        --     local totalBosses = countTable(zone)
+        --     local killedBosses = 0
+        --     for k,v in pairs(zone) do
+        --         if ZONES[v.zone].killedBosses[v.dropsFrom] then
+        --             killedBosses = killedBosses + 1
+        --         end
+        --     end
+        --     tooltip:AddLine("  "..zoneName, killedBosses.."/"..totalBosses)
+        -- end
     end
     if bcRaidAll then
         tooltip:AddSeparator(2, 0, 0, 0, 0)
         tooltip:AddHeader(EXPANSION.bc..": "..INSTANCE_TYPE.raid)
-        for zoneName,zone in pairs(mountSections[EXPANSION.bc][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.all]) do
-            local totalBosses = countTable(zone)
-            local killedBosses = 0
-            for k,v in pairs(zone) do
-                if ZONES[v.zone].killedBosses[v.dropsFrom] then
-                    killedBosses = killedBosses + 1
-                end
-            end
-            tooltip:AddLine("  "..zoneName, killedBosses.."/"..totalBosses)
-        end
+        addZoneRow(mountSections, EXPANSION.bc, INSTANCE_TYPE.raid, INSTANCE_DIFFICULTY.all)
+        -- for zoneName,zone in pairs(mountSections[EXPANSION.bc][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.all]) do
+        --     local totalBosses = countTable(zone)
+        --     local killedBosses = 0
+        --     for k,v in pairs(zone) do
+        --         if ZONES[v.zone].killedBosses[v.dropsFrom] then
+        --             killedBosses = killedBosses + 1
+        --         end
+        --     end
+        --     tooltip:AddLine("  "..zoneName, killedBosses.."/"..totalBosses)
+        -- end
     end
     if wrathRaidAll or
        wrathRaidHeroic then
         tooltip:AddSeparator(2, 0, 0, 0, 0)
         tooltip:AddHeader(EXPANSION.wrath..": "..INSTANCE_TYPE.raid)
-        for zoneName,zone in pairs(mountSections[EXPANSION.wrath][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.all]) do
-            local totalBosses = countTable(zone)
-            local killedBosses = 0
-            for k,v in pairs(zone) do
-                if ZONES[v.zone].killedBosses[v.dropsFrom] then
-                    killedBosses = killedBosses + 1
-                end
-            end
-            tooltip:AddLine("  "..zoneName, killedBosses.."/"..totalBosses)
-        end
-        for zoneName,zone in pairs(mountSections[EXPANSION.wrath][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.heroic]) do
-            local totalBosses = countTable(zone)
-            local killedBosses = 0
-            for k,v in pairs(zone) do
-                if ZONES[v.zone].killedBosses[v.dropsFrom] then
-                    killedBosses = killedBosses + 1
-                end
-            end
-            tooltip:AddLine("  "..zoneName.." ("..INSTANCE_DIFFICULTY.heroic..")", killedBosses.."/"..totalBosses)
-        end
+        addZoneRow(mountSections, EXPANSION.wrath, INSTANCE_TYPE.raid, INSTANCE_DIFFICULTY.all)
+        -- for zoneName,zone in pairs(mountSections[EXPANSION.wrath][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.all]) do
+        --     local totalBosses = countTable(zone)
+        --     local killedBosses = 0
+        --     for k,v in pairs(zone) do
+        --         if ZONES[v.zone].killedBosses[v.dropsFrom] then
+        --             killedBosses = killedBosses + 1
+        --         end
+        --     end
+        --     tooltip:AddLine("  "..zoneName, killedBosses.."/"..totalBosses)
+        -- end
+        addZoneRow(mountSections, EXPANSION.wrath, INSTANCE_TYPE.raid, INSTANCE_DIFFICULTY.heroic)
+        -- for zoneName,zone in pairs(mountSections[EXPANSION.wrath][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.heroic]) do
+        --     local totalBosses = countTable(zone)
+        --     local killedBosses = 0
+        --     for k,v in pairs(zone) do
+        --         if ZONES[v.zone].killedBosses[v.dropsFrom] then
+        --             killedBosses = killedBosses + 1
+        --         end
+        --     end
+        --     tooltip:AddLine("  "..zoneName.." ("..INSTANCE_DIFFICULTY.heroic..")", killedBosses.."/"..totalBosses)
+        -- end
     end
     if cataRaidAll or
        cataRaidHeroic then
         tooltip:AddSeparator(2, 0, 0, 0, 0)
         tooltip:AddHeader(EXPANSION.cata..": "..INSTANCE_TYPE.raid)
-        for zoneName,zone in pairs(mountSections[EXPANSION.cata][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.all]) do
-            local totalBosses = countTable(zone)
-            local killedBosses = 0
-            for k,v in pairs(zone) do
-                if ZONES[v.zone].killedBosses[v.dropsFrom] then
-                    killedBosses = killedBosses + 1
-                end
-            end
-            tooltip:AddLine("  "..zoneName, killedBosses.."/"..totalBosses)
-        end
-        for zoneName,zone in pairs(mountSections[EXPANSION.cata][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.heroic]) do
-            local totalBosses = countTable(zone)
-            local killedBosses = 0
-            for k,v in pairs(zone) do
-                if ZONES[v.zone].killedBosses[v.dropsFrom] then
-                    killedBosses = killedBosses + 1
-                end
-            end
-            tooltip:AddLine("  "..zoneName.." ("..INSTANCE_DIFFICULTY.heroic..")", killedBosses.."/"..totalBosses)
-        end
+        addZoneRow(mountSections, EXPANSION.cata, INSTANCE_TYPE.raid, INSTANCE_DIFFICULTY.all)
+        -- for zoneName,zone in pairs(mountSections[EXPANSION.cata][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.all]) do
+        --     local totalBosses = countTable(zone)
+        --     local killedBosses = 0
+        --     for k,v in pairs(zone) do
+        --         if ZONES[v.zone].killedBosses[v.dropsFrom] then
+        --             killedBosses = killedBosses + 1
+        --         end
+        --     end
+        --     tooltip:AddLine("  "..zoneName, killedBosses.."/"..totalBosses)
+        -- end
+        addZoneRow(mountSections, EXPANSION.cata, INSTANCE_TYPE.raid, INSTANCE_DIFFICULTY.heroic)
+        -- for zoneName,zone in pairs(mountSections[EXPANSION.cata][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.heroic]) do
+        --     local totalBosses = countTable(zone)
+        --     local killedBosses = 0
+        --     for k,v in pairs(zone) do
+        --         if ZONES[v.zone].killedBosses[v.dropsFrom] then
+        --             killedBosses = killedBosses + 1
+        --         end
+        --     end
+        --     tooltip:AddLine("  "..zoneName.." ("..INSTANCE_DIFFICULTY.heroic..")", killedBosses.."/"..totalBosses)
+        -- end
     end
     if mopRaidAll or
        mopRaidHeroic or
        mopRaidMythic then
         tooltip:AddSeparator(2, 0, 0, 0, 0)
         tooltip:AddHeader(EXPANSION.mop..": "..INSTANCE_TYPE.raid)
-        for zoneName,zone in pairs(mountSections[EXPANSION.mop][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.all]) do
-            local totalBosses = countTable(zone)
-            local killedBosses = 0
-            for k,v in pairs(zone) do
-                if ZONES[v.zone].killedBosses[v.dropsFrom] then
-                    killedBosses = killedBosses + 1
-                end
-            end
-            tooltip:AddLine("  "..zoneName, killedBosses.."/"..totalBosses)
-        end
-        for zoneName,zone in pairs(mountSections[EXPANSION.mop][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.heroic]) do
-            local totalBosses = countTable(zone)
-            local killedBosses = 0
-            for k,v in pairs(zone) do
-                if ZONES[v.zone].killedBosses[v.dropsFrom] then
-                    killedBosses = killedBosses + 1
-                end
-            end
-            tooltip:AddLine("  "..zoneName.." ("..INSTANCE_DIFFICULTY.heroic..")", killedBosses.."/"..totalBosses)
-        end
-        for zoneName,zone in pairs(mountSections[EXPANSION.mop][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.mythic]) do
-            local totalBosses = countTable(zone)
-            local killedBosses = 0
-            for k,v in pairs(zone) do
-                if ZONES[v.zone].killedBosses[v.dropsFrom] then
-                    killedBosses = killedBosses + 1
-                end
-            end
-            tooltip:AddLine("  "..zoneName.." ("..INSTANCE_DIFFICULTY.mythic..")", killedBosses.."/"..totalBosses)
-        end
+        addZoneRow(mountSections, EXPANSION.mop, INSTANCE_TYPE.raid, INSTANCE_DIFFICULTY.all)
+        -- for zoneName,zone in pairs(mountSections[EXPANSION.mop][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.all]) do
+        --     local totalBosses = countTable(zone)
+        --     local killedBosses = 0
+        --     for k,v in pairs(zone) do
+        --         if ZONES[v.zone].killedBosses[v.dropsFrom] then
+        --             killedBosses = killedBosses + 1
+        --         end
+        --     end
+        --     tooltip:AddLine("  "..zoneName, killedBosses.."/"..totalBosses)
+        -- end
+        addZoneRow(mountSections, EXPANSION.mop, INSTANCE_TYPE.raid, INSTANCE_DIFFICULTY.heroic)
+        -- for zoneName,zone in pairs(mountSections[EXPANSION.mop][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.heroic]) do
+        --     local totalBosses = countTable(zone)
+        --     local killedBosses = 0
+        --     for k,v in pairs(zone) do
+        --         if ZONES[v.zone].killedBosses[v.dropsFrom] then
+        --             killedBosses = killedBosses + 1
+        --         end
+        --     end
+        --     tooltip:AddLine("  "..zoneName.." ("..INSTANCE_DIFFICULTY.heroic..")", killedBosses.."/"..totalBosses)
+        -- end
+        addZoneRow(mountSections, EXPANSION.mop, INSTANCE_TYPE.raid, INSTANCE_DIFFICULTY.mythic)
+        -- for zoneName,zone in pairs(mountSections[EXPANSION.mop][INSTANCE_TYPE.raid][INSTANCE_DIFFICULTY.mythic]) do
+        --     local totalBosses = countTable(zone)
+        --     local killedBosses = 0
+        --     for k,v in pairs(zone) do
+        --         if ZONES[v.zone].killedBosses[v.dropsFrom] then
+        --             killedBosses = killedBosses + 1
+        --         end
+        --     end
+        --     tooltip:AddLine("  "..zoneName.." ("..INSTANCE_DIFFICULTY.mythic..")", killedBosses.."/"..totalBosses)
+        -- end
     end
     if next(mountSections[EXPANSION.mop][INSTANCE_TYPE.world]) ~= nil then
         tooltip:AddSeparator(2, 0, 0, 0, 0)
         tooltip:AddHeader(EXPANSION.mop..": "..INSTANCE_TYPE.world)
-        for zoneName,zone in pairs(mountSections[EXPANSION.mop][INSTANCE_TYPE.world]) do
-            local totalBosses = countTable(zone)
-            local killedBosses = 0
-            for k,v in pairs(zone) do
-                if ZONES[INSTANCE_TYPE.world].killedBosses[v.dropsFrom] then
-                    killedBosses = killedBosses + 1
-                end
-            end
-            tooltip:AddLine("  "..zoneName, killedBosses.."/"..totalBosses)
-        end
+        addZoneRow(mountSections, EXPANSION.mop, INSTANCE_TYPE.world)
+        -- for zoneName,zone in pairs(mountSections[EXPANSION.mop][INSTANCE_TYPE.world]) do
+        --     local totalBosses = countTable(zone)
+        --     local killedBosses = 0
+        --     for k,v in pairs(zone) do
+        --         if ZONES[INSTANCE_TYPE.world].killedBosses[v.dropsFrom] then
+        --             killedBosses = killedBosses + 1
+        --         end
+        --     end
+        --     tooltip:AddLine("  "..zoneName, killedBosses.."/"..totalBosses)
+        -- end
     end
     if next(mountSections[EXPANSION.wod][INSTANCE_TYPE.world]) ~= nil then
         tooltip:AddSeparator(2, 0, 0, 0, 0)
         tooltip:AddHeader(EXPANSION.wod..": "..INSTANCE_TYPE.world)
-        for zoneName,zone in pairs(mountSections[EXPANSION.wod][INSTANCE_TYPE.world]) do
-            local totalBosses = countTable(zone)
-            local killedBosses = 0
-            for k,v in pairs(zone) do
-                if ZONES[INSTANCE_TYPE.world].killedBosses[v.dropsFrom] then
-                    killedBosses = killedBosses + 1
-                end
-            end
-            tooltip:AddLine("  "..zoneName, killedBosses.."/"..totalBosses)
-        end
+        addZoneRow(mountSections, EXPANSION.wod, INSTANCE_TYPE.world)
+        -- for zoneName,zone in pairs(mountSections[EXPANSION.wod][INSTANCE_TYPE.world]) do
+        --     local totalBosses = countTable(zone)
+        --     local killedBosses = 0
+        --     for k,v in pairs(zone) do
+        --         if ZONES[INSTANCE_TYPE.world].killedBosses[v.dropsFrom] then
+        --             killedBosses = killedBosses + 1
+        --         end
+        --     end
+        --     tooltip:AddLine("  "..zoneName, killedBosses.."/"..totalBosses)
+        -- end
     end
 
 
