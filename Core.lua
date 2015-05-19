@@ -1,21 +1,25 @@
-local addonShortName = "IMC"
+local addonShortName = "InstanceMountCollector"
+local addonAbbr = "IMC"
 
 IMCAddon = LibStub("AceAddon-3.0"):NewAddon(addonShortName, "AceConsole-3.0", "AceEvent-3.0")
 
 local LibQTip = LibStub('LibQTip-1.0')
 
-local LDB = LibStub("LibDataBroker-1.1"):NewDataObject(addonShortName, {
-    type = "launcher",
-    -- text = addonShortName,
-    icon = "Interface\\Icons\\INV_Chest_Cloth_17",
-    OnEnter = function(frame) IMCAddon:IconOnEnter(frame) end,
-    OnLeave = function(frame) IMCAddon:IconOnLeave(frame) end
-})
+-- local LDB = LibStub("LibDataBroker-1.1"):NewDataObject(addonShortName, {
+--     type = "launcher",
+--     -- text = addonShortName,
+--     icon = "Interface\\Icons\\INV_Chest_Cloth_17",
+--     OnEnter = function(frame) IMCAddon:IconOnEnter(frame) end,
+--     OnLeave = function(frame) IMCAddon:IconOnLeave(frame) end
+-- })
+local LDB = LibStub("LibDataBroker-1.1")
 local LDBIcon = LDB and LibStub("LibDBIcon-1.0")
 
 
-local DEBUG = false
-local DEBUG_ALL_MOUNTS = false
+local DEBUG = true
+local DEBUG_ALL_MOUNTS = true
+
+local tooltip, indicatortip
 
 local FACTION = {
     [0] = "Horde",
@@ -41,8 +45,8 @@ local INSTANCE_DIFFICULTY = {
 
 local INSTANCE_SIZE = {
     all = "All",
-    ten = "10 man",
-    twentyFive = "25 man"
+    ten = "10m",
+    twentyFive = "25m"
 }
 
 local EXPANSION = {
@@ -67,7 +71,9 @@ local INSTANCE_MOUNTS = {
 
     ["Blue Qiraji Battle Tank"] = {
         zone =               "Temple of Ahn'Qiraj",
-        dropsFrom =          "Trash",
+        dropsFrom =          "",
+        note =               "Trash",
+        saveCheck =          "C'Thun",
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
         instanceSize =       INSTANCE_SIZE.all,
@@ -76,7 +82,9 @@ local INSTANCE_MOUNTS = {
 
     ["Green Qiraji Battle Tank"] = {
         zone =               "Temple of Ahn'Qiraj",
-        dropsFrom =          "Trash",
+        dropsFrom =          "",
+        note =               "Trash",
+        saveCheck =          "C'Thun",
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
         instanceSize =       INSTANCE_SIZE.all,
@@ -85,7 +93,9 @@ local INSTANCE_MOUNTS = {
 
     ["Yellow Qiraji Battle Tank"] = {
         zone =               "Temple of Ahn'Qiraj",
-        dropsFrom =          "Trash",
+        dropsFrom =          "",
+        note =               "Trash",
+        saveCheck =          "C'Thun",
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
         instanceSize =       INSTANCE_SIZE.all,
@@ -94,7 +104,9 @@ local INSTANCE_MOUNTS = {
 
     ["Red Qiraji Battle Tank"] = {
         zone =               "Temple of Ahn'Qiraj",
-        dropsFrom =          "Trash",
+        dropsFrom =          "",
+        note =               "Trash",
+        saveCheck =          "C'Thun",
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
         instanceSize =       INSTANCE_SIZE.all,
@@ -161,7 +173,12 @@ local INSTANCE_MOUNTS = {
 
     ["Grand Black War Mammoth"] = {
         zone =               "Vault of Archavon",
-        dropsFrom =          "All 4 Bosses",
+        dropsFrom =          {
+            "Archavon the Stone Watcher",
+            "Emalon the Storm Watcher",
+            "Koralon the Flame Watcher",
+            "Toravon the Ice Watcher"
+        },
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
         instanceSize =       INSTANCE_SIZE.all,
@@ -188,7 +205,8 @@ local INSTANCE_MOUNTS = {
 
     ["Black Drake"] = {
         zone =               "The Obsidian Sanctum",
-        dropsFrom =          "Sartharion (3 Drakes)",
+        dropsFrom =          "Sartharion",
+        note =               "3 Drakes",
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
         instanceSize =       INSTANCE_SIZE.ten,
@@ -197,7 +215,8 @@ local INSTANCE_MOUNTS = {
 
     ["Twilight Drake"] = {
         zone =               "The Obsidian Sanctum",
-        dropsFrom =          "Sartharion (3 Drakes)",
+        dropsFrom =          "Sartharion",
+        note =               "3 Drakes",
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
         instanceSize =       INSTANCE_SIZE.twentyFive,
@@ -215,7 +234,8 @@ local INSTANCE_MOUNTS = {
 
     ["Mimiron's Head"] = {
         zone =               "Ulduar",
-        dropsFrom =          "Yogg-Saron (No Watchers)",
+        dropsFrom =          "Yogg-Saron",
+        note =               "No Watchers",
         instanceType =       INSTANCE_TYPE.raid,
         instanceDifficulty = INSTANCE_DIFFICULTY.all,
         instanceSize =       INSTANCE_SIZE.twentyFive,
@@ -271,7 +291,8 @@ local INSTANCE_MOUNTS = {
 
     ["Amani Battle Bear"] = {
         zone =               "Zul'Aman",
-        dropsFrom =          "(Timed Reward)",
+        dropsFrom =          "",
+        note =               "Timed Reward",
         instanceType =       INSTANCE_TYPE.dungeon,
         instanceDifficulty = INSTANCE_DIFFICULTY.heroic,
         instanceSize =       INSTANCE_SIZE.all,
@@ -478,8 +499,8 @@ end
 
 function IMCAddon:OnInitialize()
     self:Debug("OnInitialize")
-    self:RegisterChatCommand("scanmounts", "ScanMounts")
-    self:RegisterChatCommand("instances", "AvailableMountInstances")
+    -- self:RegisterChatCommand("scanmounts", "ScanMounts")
+    -- self:RegisterChatCommand("instances", "AvailableMountInstances")
 
     self.db = LibStub("AceDB-3.0"):New("IMCDB", {
         profile = {
@@ -489,7 +510,20 @@ function IMCAddon:OnInitialize()
         },
     })
 
-    LDBIcon:Register(addonShortName, LDB, self.db.profile.minimap)
+
+    local dataobject = LDB:NewDataObject(addonShortName, {
+        text = addonAbbr,
+        type = "launcher",
+        icon = "Interface\\Icons\\INV_Chest_Cloth_17",
+        OnEnter = function(frame) IMCAddon:IconOnEnter(frame) end,
+        OnLeave = function(frame) end,
+    })
+
+    LDBIcon:Register(addonShortName, dataobject, self.db.profile.minimap)
+
+
+
+    -- LDBIcon:Register(addonShortName, LDB, self.db.profile.minimap)
     self:RegisterChatCommand("toggleimcicon", "ToggleMinimapIcon")
 
     -- Setup mount list by zone
@@ -532,14 +566,17 @@ function IMCAddon:IconOnEnter(frame)
     self:ScanMounts()
     self:ScanSavedInstances()
 
-    if self.tooltip then
-        LibQTip:Release(self.tooltip)
-        self.tooltip = nil
+    if tooltip then
+        LibQTip:Release(tooltip)
+        tooltip = nil
     end
 
-    local tooltip = LibQTip:Acquire("IMCTooltip", 2, "LEFT", "CENTER")
-    self.tooltip = tooltip
-    self.tooltip:SetScript("OnLeave", function() if self.tooltip then LibQTip:Release(self.tooltip); self.tooltip = nil end  end )
+    tooltip = LibQTip:Acquire(addonShortName, 2, "LEFT", "CENTER")
+    tooltip.anchorframe = frame
+    tooltip:Clear()
+    tooltip:SetAutoHideDelay(0.1, frame)
+    tooltip.OnRelease = function() tooltip = nil end
+    -- tooltip:SetScript("OnLeave", TooltipOnLeave)
 
 
     local mountSections = MOUNT_SECTIONS()
@@ -565,14 +602,17 @@ function IMCAddon:IconOnEnter(frame)
             local killedBosses = 0
             local hasLock = false
             for k,v in pairs(section[zoneName]) do
-                if (v.instanceDifficulty == INSTANCE_DIFFICULTY.heroic or v.instanceDifficulty == INSTANCE_DIFFICULTY.mythic or
-                   v.instanceType == INSTANCE_TYPE.raid or v.instanceType == INSTANCE_TYPE.world) and
-                   v.dropsFrom ~= "Trash" then -- AQ check
-                    hasLock = true
-                end
-                local z = itype == INSTANCE_TYPE.world and INSTANCE_TYPE.world or v.zone
-                if ZONES[z].killedBosses[v.dropsFrom] then
-                    killedBosses = killedBosses + 1
+                local bosses = type(v.dropsFrom) == "table" and v.dropsFrom or {v.dropsFrom}
+                for i,j in pairs(bosses) do
+                    if (v.instanceDifficulty == INSTANCE_DIFFICULTY.heroic or v.instanceDifficulty == INSTANCE_DIFFICULTY.mythic or
+                       v.instanceType == INSTANCE_TYPE.raid or v.instanceType == INSTANCE_TYPE.world) and
+                       j ~= "Trash" then -- AQ check
+                        hasLock = true
+                    end
+                    local z = itype == INSTANCE_TYPE.world and INSTANCE_TYPE.world or v.zone
+                    if ZONES[z].killedBosses[j] then
+                        killedBosses = killedBosses + 1
+                    end
                 end
             end
             local name = "  "..zoneName
@@ -581,8 +621,31 @@ function IMCAddon:IconOnEnter(frame)
                 bossCount = ""
             end
             local lineNum = tooltip:AddLine(name, bossCount)
-            tooltip:SetCellScript(lineNum, 1, "OnEnter", ShowZoneCellTooltip)
-            -- cell:SetScript("OnEnter", ShowZoneCellTooltip)
+            -- tooltip:EnableMouse(true)
+
+
+            -- tooltip:SetLineScript(lineNum, "OnEnter", ZoneTooltipOnEnter, {
+            --     zone = name,
+            --     mounts = section[zoneName],
+            -- })
+            if hasLock then
+                tooltip:SetLineScript(lineNum, "OnEnter", DoNothing)
+                tooltip:SetCellScript(lineNum, 2, "OnEnter", ZoneTooltipOnEnter, {
+                    line = false,
+                    mounts = section[zoneName],
+                    bossStatus = bossCount
+                })
+                tooltip:SetCellScript(lineNum, 2, "OnLeave", ZoneTooltipOnLeave)
+            else
+                tooltip:SetLineScript(lineNum, "OnEnter", ZoneTooltipOnEnter, {
+                    line = true,
+                    mounts = section[zoneName],
+                    bossStatus = bossCount
+                })
+                tooltip:SetLineScript(lineNum, "OnLeave", ZoneTooltipOnLeave)
+            end
+
+
         end
     end
 
@@ -627,7 +690,7 @@ function IMCAddon:IconOnEnter(frame)
     local mopWorld = next(mountSections[EXPANSION.mop][INSTANCE_TYPE.world]) ~= nil
     local wodWorld = next(mountSections[EXPANSION.wod][INSTANCE_TYPE.world]) ~= nil
 
-    if classicRaid or bcRaid or wrathRaid or cataRaid or mopRaid or mopWorld or wodWorld then
+    if classicRaid or bcRaid or wrathRaid or cataRaid or mopRaid then
         tooltip:AddSeparator(15, 1, 1, 1, 0)
         tooltip:AddHeader("Raids", UnitName("player"))
     end
@@ -657,6 +720,12 @@ function IMCAddon:IconOnEnter(frame)
         tooltip:AddHeader(EXPANSION.mop)
         addZoneRow(mountSections, EXPANSION.mop, INSTANCE_TYPE.raid)
     end
+
+    if mopWorld or wodWorld then
+        tooltip:AddSeparator(15, 1, 1, 1, 0)
+        tooltip:AddHeader("World", UnitName("player"))
+    end
+
     if mopWorld then
         tooltip:AddSeparator(2, 0, 0, 0, 0)
         tooltip:AddHeader(EXPANSION.mop)
@@ -679,13 +748,16 @@ function IMCAddon:IconOnEnter(frame)
 end
 
 function countUniqueBosses(t)
-    IMC_T = t
+    -- IMC_T = t
     local count = 0
     local temp = {}
     for k,v in pairs(t) do
-        if not temp[v.dropsFrom] then
-            count = count + 1
-            temp[v.dropsFrom] = true
+        local bosses = type(v.dropsFrom) == "table" and v.dropsFrom or {v.dropsFrom}
+        for i,j in pairs(bosses) do
+            if not temp[j] then
+                count = count + 1
+                temp[j] = true
+            end
         end
     end
     return count
@@ -693,7 +765,7 @@ end
 
 function IMCAddon:IconOnLeave(frame)
     -- Release the tooltip
-    -- LibQTip:Release(self.tooltip)
+    -- LibQTip:Release(tooltip)
 end
 
 function IMCAddon:ToggleMinimapIcon()
@@ -705,12 +777,83 @@ function IMCAddon:ToggleMinimapIcon()
     end
 end
 
-local function ShowZoneCellTooltip(cell, arg, ...)
-    IMCAddon:Debug("ShowZoneCellTooltip")
+function TooltipOnLeave()
+    IMCAddon:Debug("TooltipOnLeave")
 end
 
-local function ShowBossCellTooltip(cell, arg, ...)
-    IMCAddon:Debug("ShowBossCellTooltip")
+function DoNothing()
+
+end
+
+function ZoneTooltipOnEnter(cell, arg, ...)
+    IMCAddon:Debug("ZoneTooltipOnEnter")
+    local mounts = arg.mounts
+    local bossStatus = arg.bossStatus
+    local num = 0
+    -- IMCAddon:Debug(cell)
+    -- tooltipClosable = false
+    -- additionalInfoTip = LibQTip:Acquire(addonShortName.."AddInfoTip", 1, "LEFT")
+    -- additionalInfoTip:SetScript("OnLeave", CloseAdditionalInfoTip)
+    -- IMC_ARG = arg
+    openIndicator(3, "LEFT", "CENTER", "RIGHT")
+    if not arg.line then
+        indicatortip:AddHeader(bossStatus, "", UnitName("player"))
+        -- indicatortip:AddSeparator(3, 1, 1, 1, 0)
+    end
+    for k,v in pairs(mounts) do
+        if not arg.line or num > 0 then
+            indicatortip:AddSeparator(2, 1, 1, 1, 0)
+        end
+        num = num + 1
+
+        indicatortip:AddHeader(k)
+        local bosses = type(v.dropsFrom) == "table" and v.dropsFrom or {v.dropsFrom}
+        for i,j in pairs(bosses) do
+            local dropsFrom = j
+            if v.note then
+                if dropsFrom == "" then
+                    dropsFrom = v.note
+                else
+                    dropsFrom = dropsFrom.." ("..v.note..")"
+                end
+            end
+
+            local mods = ""
+
+            local tmp = {}
+            if v.instanceDifficulty ~= INSTANCE_DIFFICULTY.all then
+                table.insert(tmp, v.instanceDifficulty)
+            end
+            if v.instanceSize ~= INSTANCE_SIZE.all then
+                table.insert(tmp, v.instanceSize)
+            end
+
+            if #tmp > 0 then
+                mods = strjoin(", ", unpack(tmp))
+            end
+
+            local z = v.instanceType == INSTANCE_TYPE.world and INSTANCE_TYPE.world or v.zone
+            local available = ""
+            if not arg.line then
+                if j ~= "" then
+                    available = ZONES[z].killedBosses[dropsFrom] and "Unavailable" or "Available"
+                elseif v.saveCheck then
+                    available = ZONES[z].killedBosses[v.saveCheck] and "Unavailable" or "Available"
+                else
+                    available = ZONES[z].saved and "Unavailable" or "Available"
+                end
+            end
+            indicatortip:AddLine(dropsFrom, mods, available)
+        end
+    end
+    -- finishIndicator(cell)
+    finishIndicator()
+end
+
+function ZoneTooltipOnLeave(cell, arg, ...)
+    IMCAddon:Debug("ZoneTooltipOnLeave")
+    -- tooltipClosable = true
+    CloseIndicator()
 end
 
 function IMCAddon:ScanMounts()
@@ -767,5 +910,28 @@ function IMCAddon:AvailableMountInstances()
         if next(availableMounts) ~= nil then
             IMCAddon:Print(k .. " - " .. strjoin(", ", unpack(availableMounts)))
         end
+    end
+end
+
+function openIndicator(...)
+    indicatortip = LibQTip:Acquire(addonShortName.."IndicatorTip", ...)
+    indicatortip:Clear()
+    -- indicatortip:SetHeaderFont(core:HeaderFont())
+    -- indicatortip:SetScale(vars.db.Tooltip.Scale)
+end
+
+function finishIndicator(parent)
+    parent = parent or tooltip
+    indicatortip:SetAutoHideDelay(0.1, parent)
+    indicatortip.OnRelease = function() indicatortip = nil end -- extra-safety: update our variable on auto-release
+    indicatortip:SmartAnchorTo(parent)
+    indicatortip:SetFrameLevel(100) -- ensure visibility when forced to overlap main tooltip
+    -- addon:SkinFrame(indicatortip,"SavedInstancesIndicatorTooltip")
+    indicatortip:Show()
+end
+
+function CloseIndicator()
+    if indicatortip then
+        indicatortip:Hide()
     end
 end
