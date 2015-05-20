@@ -77,7 +77,7 @@ function core:OnInitialize()
     vars.dataobject = vars.LDB and vars.LDB:NewDataObject(addonName, {
         text = addonAbbrev,
         type = "launcher",
-        icon = "Interface\\Icons\\INV_Chest_Cloth_17",
+        icon = "Interface\\Icons\\Ability_Mount_BigBlizzardBear",
         -- OnEnter = function(frame)
         --       if not addon:IsDetached() and not db.Tooltip.DisableMouseover then
         --     core:ShowTooltip(frame)
