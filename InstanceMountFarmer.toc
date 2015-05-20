@@ -1,9 +1,11 @@
 ## Interface: 60100
-## Title: Instance Mount Collector
+## Title: Instance Mount Farmer
 ## Notes: Tracks instance mounts you need across all characters.
 ## Author: Myxini@Hyjal
 ## Version: 0.1
+## SavedVariables: InstanceMountFarmerDB
 
 embeds.xml
 
 Core.lua
+Data\InstanceMounts.lua

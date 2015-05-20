@@ -1,758 +1,335 @@
-local addonShortName = "InstanceMountCollector"
-local addonAbbr = "IMC"
+local addonName, vars = ...
+InstanceMountFarmer = vars
+local addon = vars
+-- local data = vars.data
+local addonAbbrev = "IMF"
+vars.core = LibStub("AceAddon-3.0"):NewAddon(addonName, "AceConsole-3.0", "AceEvent-3.0", "AceTimer-3.0")
+local core = vars.core
+vars.LDB = LibStub("LibDataBroker-1.1", true)
+vars.icon = vars.LDB and LibStub("LibDBIcon-1.0", true)
 
-IMCAddon = LibStub("AceAddon-3.0"):NewAddon(addonShortName, "AceConsole-3.0", "AceEvent-3.0")
-
-local LibQTip = LibStub('LibQTip-1.0')
-
--- local LDB = LibStub("LibDataBroker-1.1"):NewDataObject(addonShortName, {
---     type = "launcher",
---     -- text = addonShortName,
---     icon = "Interface\\Icons\\INV_Chest_Cloth_17",
---     OnEnter = function(frame) IMCAddon:IconOnEnter(frame) end,
---     OnLeave = function(frame) IMCAddon:IconOnLeave(frame) end
--- })
-local LDB = LibStub("LibDataBroker-1.1")
-local LDBIcon = LDB and LibStub("LibDBIcon-1.0")
-
+local QTip = LibStub("LibQTip-1.0")
 
 local DEBUG = true
 local DEBUG_ALL_MOUNTS = true
 
+local fontSize = {
+    header = 16,
+    section = 14,
+    standard = 12,
+}
+
+local zones, mountSections
+local dataobject, db
 local tooltip, indicatortip
+local dungeonHLine, raidHLine
 
-local FACTION = {
-    [0] = "Horde",
-    [1] = "Alliance"
+local thisToon = {
+    name = UnitName("player") .. " - " .. GetRealmName(),
+    faction = UnitFactionGroup("player")
 }
 
-local MOUNT_SOURCE = {
-    drop = 1
+local INSTANCE_TYPE, INSTANCE_DIFFICULTY, INSTANCE_SIZE,
+      EXPANSION, INSTANCE_DIFFICULTY_MAP, INSTANCE_MOUNTS
+
+-- local (optimal) references to Blizzard's strings
+local RAID_CLASS_COLORS = RAID_CLASS_COLORS
+local FONTEND = FONT_COLOR_CODE_CLOSE
+local GOLDFONT = NORMAL_FONT_COLOR_CODE
+local YELLOWFONT = LIGHTYELLOW_FONT_COLOR_CODE
+local REDFONT = RED_FONT_COLOR_CODE
+local GREENFONT = GREEN_FONT_COLOR_CODE
+local WHITEFONT = HIGHLIGHT_FONT_COLOR_CODE
+local GRAYFONT = GRAY_FONT_COLOR_CODE
+
+vars.defaultDB = {
+    DBVersion = 1,
+    Toons = {}, -- table key: "ToonName - Realm"; value:
+        -- class: string
+        -- level: integer
+        -- faction: integer
+        -- lastUpdated: integer
+        -- instances key: "InstanceName"; value:
+            -- key: "difficulty" (Normal, Heroic, Mythic); value:
+                -- bosses key: "BossName"; value: boolean (Killed)
+                -- resetsAt: integer
+    MinimapIcon = {
+        hide = false
+    },
 }
 
-local INSTANCE_TYPE = {
-    raid = "Raid",
-    dungeon = "Dungeon",
-    world = "World"
-}
+function core:OnInitialize()
+    addon:Debug("OnInitialize")
+    InstanceMountFarmerDB = InstanceMountFarmerDB or vars.defaultDB
+    db = db or InstanceMountFarmerDB
+    vars.db = db
 
-local INSTANCE_DIFFICULTY = {
-    all = "All",
-    normal = "Normal",
-    heroic = "Heroic",
-    mythic = "Mythic"
-}
+    addon:toonInit()
 
-local INSTANCE_SIZE = {
-    all = "All",
-    ten = "10m",
-    twentyFive = "25m"
-}
-
-local EXPANSION = {
-    classic = "Classic",
-    bc = "Burning Crusade",
-    wrath = "Wrath of the Lich King",
-    cata = "Cataclysm",
-    mop = "Mists of Pandaria",
-    wod = "Warlords of Draenor",
-}
-
-local INSTANCE_MOUNTS = {
-    -- Vanilla
-    ["Rivendare's Deathcharger"] = {
-        zone =               "Stratholme",
-        dropsFrom =          "Lord Aurius Rivendare",
-        instanceType =       INSTANCE_TYPE.dungeon,
-        instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.classic
-    },
-
-    ["Blue Qiraji Battle Tank"] = {
-        zone =               "Temple of Ahn'Qiraj",
-        dropsFrom =          "",
-        note =               "Trash",
-        saveCheck =          "C'Thun",
-        instanceType =       INSTANCE_TYPE.raid,
-        instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.classic
-    },
-
-    ["Green Qiraji Battle Tank"] = {
-        zone =               "Temple of Ahn'Qiraj",
-        dropsFrom =          "",
-        note =               "Trash",
-        saveCheck =          "C'Thun",
-        instanceType =       INSTANCE_TYPE.raid,
-        instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.classic
-    },
-
-    ["Yellow Qiraji Battle Tank"] = {
-        zone =               "Temple of Ahn'Qiraj",
-        dropsFrom =          "",
-        note =               "Trash",
-        saveCheck =          "C'Thun",
-        instanceType =       INSTANCE_TYPE.raid,
-        instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.classic
-    },
-
-    ["Red Qiraji Battle Tank"] = {
-        zone =               "Temple of Ahn'Qiraj",
-        dropsFrom =          "",
-        note =               "Trash",
-        saveCheck =          "C'Thun",
-        instanceType =       INSTANCE_TYPE.raid,
-        instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.classic
-    },
+    INSTANCE_TYPE = vars.data.INSTANCE_TYPE
+    INSTANCE_DIFFICULTY = vars.data.INSTANCE_DIFFICULTY
+    INSTANCE_SIZE = vars.data.INSTANCE_SIZE
+    EXPANSION = vars.data.EXPANSION
+    INSTANCE_DIFFICULTY_MAP = vars.data.INSTANCE_DIFFICULTY_MAP
+    INSTANCE_MOUNTS = vars.data.INSTANCE_MOUNTS
 
 
-    -- Burning Crusade
-    ["Raven Lord"] = {
-        zone =               "Sethekk Halls",
-        dropsFrom =          "Anzu",
-        instanceType =       INSTANCE_TYPE.dungeon,
-        instanceDifficulty = INSTANCE_DIFFICULTY.heroic,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.bc
-    },
-
-    ["Swift White Hawkstrider"] = {
-        zone =               "Magisters' Terrace",
-        dropsFrom =          "Kael'thas Sunstrider",
-        instanceType =       INSTANCE_TYPE.dungeon,
-        instanceDifficulty = INSTANCE_DIFFICULTY.heroic,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.bc
-    },
-
-    ["Fiery Warhorse"] = {
-        zone =               "Karazhan",
-        dropsFrom =          "Attumen the Huntsman",
-        instanceType =       INSTANCE_TYPE.raid,
-        instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.bc
-    },
-
-    ["Ashes of Al'ar"] = {
-        zone =               "Tempest Keep",
-        dropsFrom =          "Kael'thas Sunstrider",
-        instanceType =       INSTANCE_TYPE.raid,
-        instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.bc
-    },
-
-
-    -- Wrath of the Lich King
-    ["Blue Proto-Drake"] = {
-        zone =               "Utgarde Pinnacle",
-        dropsFrom =          "Skadi the Ruthless",
-        instanceType =       INSTANCE_TYPE.dungeon,
-        instanceDifficulty = INSTANCE_DIFFICULTY.heroic,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.wrath
-    },
-
-    ["Bronze Drake"] = {
-        zone =               "The Culling of Stratholme",
-        dropsFrom =          "Infinite Corruptor",
-        instanceType =       INSTANCE_TYPE.dungeon,
-        instanceDifficulty = INSTANCE_DIFFICULTY.heroic,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.wrath
-    },
-
-    ["Grand Black War Mammoth"] = {
-        zone =               "Vault of Archavon",
-        dropsFrom =          {
-            "Archavon the Stone Watcher",
-            "Emalon the Storm Watcher",
-            "Koralon the Flame Watcher",
-            "Toravon the Ice Watcher"
-        },
-        instanceType =       INSTANCE_TYPE.raid,
-        instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.wrath
-    },
-
-    ["Azure Drake"] = {
-        zone =               "The Eye of Eternity",
-        dropsFrom =          "Malygos",
-        instanceType =       INSTANCE_TYPE.raid,
-        instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.wrath
-    },
-
-    ["Blue Drake"] = {
-        zone =               "The Eye of Eternity",
-        dropsFrom =          "Malygos",
-        instanceType =       INSTANCE_TYPE.raid,
-        instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.wrath
-    },
-
-    ["Black Drake"] = {
-        zone =               "The Obsidian Sanctum",
-        dropsFrom =          "Sartharion",
-        note =               "3 Drakes",
-        instanceType =       INSTANCE_TYPE.raid,
-        instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.ten,
-        expansion =          EXPANSION.wrath
-    },
-
-    ["Twilight Drake"] = {
-        zone =               "The Obsidian Sanctum",
-        dropsFrom =          "Sartharion",
-        note =               "3 Drakes",
-        instanceType =       INSTANCE_TYPE.raid,
-        instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.twentyFive,
-        expansion =          EXPANSION.wrath
-    },
-
-    ["Onyxian Drake"] = {
-        zone =               "Onyxia's Lair",
-        dropsFrom =          "Onyxia",
-        instanceType =       INSTANCE_TYPE.raid,
-        instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.wrath
-    },
-
-    ["Mimiron's Head"] = {
-        zone =               "Ulduar",
-        dropsFrom =          "Yogg-Saron",
-        note =               "No Watchers",
-        instanceType =       INSTANCE_TYPE.raid,
-        instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.twentyFive,
-        expansion =          EXPANSION.wrath
-    },
-
-    ["Invincible"] = {
-        zone =               "Icecrown Citadel",
-        dropsFrom =          "The Lich King",
-        instanceType =       INSTANCE_TYPE.raid,
-        instanceDifficulty = INSTANCE_DIFFICULTY.heroic,
-        instanceSize =       INSTANCE_SIZE.twentyFive,
-        expansion =          EXPANSION.wrath
-    },
-
-
-    -- Cataclysm
-    ["Drake of the North Wind"] = {
-        zone =               "The Vortex Pinnacle",
-        dropsFrom =          "Altairus",
-        instanceType =       INSTANCE_TYPE.dungeon,
-        instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.cata
-    },
-
-    ["Vitreous Stone Drake"] = {
-        zone =               "The Stonecore",
-        dropsFrom =          "Slabhide",
-        instanceType =       INSTANCE_TYPE.dungeon,
-        instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.cata
-    },
-
-    ["Swift Zulian Panther"] = {
-        zone =               "Zul'Gurub",
-        dropsFrom =          "High Priestess Kilnara",
-        instanceType =       INSTANCE_TYPE.dungeon,
-        instanceDifficulty = INSTANCE_DIFFICULTY.heroic,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.cata
-    },
-
-    ["Armored Razzashi Raptor"] = {
-        zone =               "Zul'Gurub",
-        dropsFrom =          "Bloodlord Mandokir",
-        instanceType =       INSTANCE_TYPE.dungeon,
-        instanceDifficulty = INSTANCE_DIFFICULTY.heroic,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.cata
-    },
-
-    ["Amani Battle Bear"] = {
-        zone =               "Zul'Aman",
-        dropsFrom =          "",
-        note =               "Timed Reward",
-        instanceType =       INSTANCE_TYPE.dungeon,
-        instanceDifficulty = INSTANCE_DIFFICULTY.heroic,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.cata
-    },
-
-    ["Drake of the South Wind"] = {
-        zone =               "Throne of the Four Winds",
-        dropsFrom =          "Al'Akir",
-        instanceType =       INSTANCE_TYPE.raid,
-        instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.cata
-    },
-
-    ["Flametalon of Alysrazor"] = {
-        zone =               "Firelands",
-        dropsFrom =          "Alysrazor",
-        instanceType =       INSTANCE_TYPE.raid,
-        instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.cata
-    },
-
-    ["Pureblood Fire Hawk"] = {
-        zone =               "Firelands",
-        dropsFrom =          "Ragnaros",
-        instanceType =       INSTANCE_TYPE.raid,
-        instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.cata
-    },
-
-    ["Experiment 12-B"] = {
-        zone =               "Dragon Soul",
-        dropsFrom =          "Ultraxion",
-        instanceType =       INSTANCE_TYPE.raid,
-        instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.cata
-    },
-
-    ["Blazing Drake"] = {
-        zone =               "Dragon Soul",
-        dropsFrom =          "Deathwing",
-        instanceType =       INSTANCE_TYPE.raid,
-        instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.cata
-    },
-
-    ["Life-Binder's Handmaiden"] = {
-        zone =               "Dragon Soul",
-        dropsFrom =          "Deathwing",
-        instanceType =       INSTANCE_TYPE.raid,
-        instanceDifficulty = INSTANCE_DIFFICULTY.heroic,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.cata
-    },
-
-
-    -- Mists of Pandaria
-    ["Heavenly Onyx Cloud Serpent"] = {
-        zone =               "Kun-Lai Summit",
-        dropsFrom =          "Sha of Anger",
-        instanceType =       INSTANCE_TYPE.world,
-        instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.mop
-    },
-
-    ["Son of Galleon"] = {
-        zone =               "Valley of the Four Winds",
-        dropsFrom =          "Galleon",
-        instanceType =       INSTANCE_TYPE.world,
-        instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.mop
-    },
-
-    ["Thundering Cobalt Cloud Serpent"] = {
-        zone =               "Isle of Thunder",
-        dropsFrom =          "Nalak",
-        instanceType =       INSTANCE_TYPE.world,
-        instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.mop
-    },
-
-    ["Cobalt Primordial Direhorn"] = {
-        zone =               "Isle of Giants",
-        dropsFrom =          "Oondasta",
-        instanceType =       INSTANCE_TYPE.world,
-        instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.mop
-    },
-
-    ["Astral Cloud Serpent"] = {
-        zone =               "Mogu'shan Vaults",
-        dropsFrom =          "Elegon",
-        instanceType =       INSTANCE_TYPE.raid,
-        instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.mop
-    },
-
-    ["Spawn of Horridon"] = {
-        zone =               "Throne of Thunder",
-        dropsFrom =          "Horridon",
-        instanceType =       INSTANCE_TYPE.raid,
-        instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.mop
-    },
-
-    ["Clutch of Ji-Kun"] = {
-        zone =               "Throne of Thunder",
-        dropsFrom =          "Ji-Kun",
-        instanceType =       INSTANCE_TYPE.raid,
-        instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.mop
-    },
-
-    ["Kor'kron Juggernaut"] = {
-        zone =               "Siege of Orgrimmar",
-        dropsFrom =          "Garrosh Hellscream",
-        instanceType =       INSTANCE_TYPE.raid,
-        instanceDifficulty = INSTANCE_DIFFICULTY.mythic,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.mop
-    },
-
-    -- Warlords of Draenor
-    ["Solar Spirehawk"] = {
-        zone =               "Spires of Arak",
-        dropsFrom =          "Rukhmar",
-        instanceType =       INSTANCE_TYPE.world,
-        instanceDifficulty = INSTANCE_DIFFICULTY.all,
-        instanceSize =       INSTANCE_SIZE.all,
-        expansion =          EXPANSION.wod
-    }
-}
-
-function MOUNT_SECTIONS()
-    return {
-        [EXPANSION.classic] = {
-            [INSTANCE_TYPE.dungeon] = {
-                -- [INSTANCE_DIFFICULTY.all] = {}
-            },
-            [INSTANCE_TYPE.raid] = {
-                -- [INSTANCE_DIFFICULTY.all] = {}
-            }
-        },
-        [EXPANSION.bc] = {
-            [INSTANCE_TYPE.dungeon] = {
-                -- [INSTANCE_DIFFICULTY.heroic] = {}
-            },
-            [INSTANCE_TYPE.raid] = {
-                -- [INSTANCE_DIFFICULTY.all] = {}
-            }
-        },
-        [EXPANSION.wrath] = {
-            [INSTANCE_TYPE.dungeon] = {
-                -- [INSTANCE_DIFFICULTY.heroic] = {}
-            },
-            [INSTANCE_TYPE.raid] = {
-                -- [INSTANCE_DIFFICULTY.all] = {},
-                -- [INSTANCE_DIFFICULTY.heroic] = {}
-            }
-        },
-        [EXPANSION.cata] = {
-            [INSTANCE_TYPE.dungeon] = {
-                -- [INSTANCE_DIFFICULTY.all] = {},
-                -- [INSTANCE_DIFFICULTY.heroic] = {},
-            },
-            [INSTANCE_TYPE.raid] = {
-                -- [INSTANCE_DIFFICULTY.all] = {},
-                -- [INSTANCE_DIFFICULTY.heroic] = {}
-            }
-        },
-        [EXPANSION.mop] = {
-            [INSTANCE_TYPE.raid] = {
-                -- [INSTANCE_DIFFICULTY.all] = {},
-                -- [INSTANCE_DIFFICULTY.heroic] = {},
-                -- [INSTANCE_DIFFICULTY.mythic] = {},
-            },
-            [INSTANCE_TYPE.world] = {},
-        },
-        [EXPANSION.wod] = {
-            [INSTANCE_TYPE.world] = {},
-        }
-    }
-end
-
-local ZONES = {}
-
-function IMCAddon:Debug(message)
-    if DEBUG then
-        IMCAddon:Print(message)
-    end
-end
-
-function IMCAddon:OnInitialize()
-    self:Debug("OnInitialize")
-    -- self:RegisterChatCommand("scanmounts", "ScanMounts")
-    -- self:RegisterChatCommand("instances", "AvailableMountInstances")
-
-    self.db = LibStub("AceDB-3.0"):New("IMCDB", {
-        profile = {
-            minimap = {
-                hide = false,
-            },
-        },
-    })
-
-
-    local dataobject = LDB:NewDataObject(addonShortName, {
-        text = addonAbbr,
+    vars.dataobject = vars.LDB and vars.LDB:NewDataObject(addonName, {
+        text = addonAbbrev,
         type = "launcher",
         icon = "Interface\\Icons\\INV_Chest_Cloth_17",
-        OnEnter = function(frame) IMCAddon:IconOnEnter(frame) end,
+        -- OnEnter = function(frame)
+        --       if not addon:IsDetached() and not db.Tooltip.DisableMouseover then
+        --     core:ShowTooltip(frame)
+        --           end
+        -- end,
+        OnEnter = function(frame) core:ShowTooltip(frame) end,
         OnLeave = function(frame) end,
+        -- OnClick = function(frame, button)
+        --     if button == "MiddleButton" then
+        --         ToggleFriendsFrame(4) -- open Blizzard Raid window
+        --         RaidInfoFrame:Show()
+        --     elseif button == "LeftButton" then
+        --        addon:ToggleDetached()
+        --     else
+        --         config:ShowConfig()
+        --     end
+        -- end
     })
+    if vars.icon then
+        vars.icon:Register(addonName, vars.dataobject, db.MinimapIcon)
+        vars.icon:Refresh(addonName)
+    end
 
-    LDBIcon:Register(addonShortName, dataobject, self.db.profile.minimap)
 
+    self:RequestLockInfo() -- get lockout data
 
+    -- self:RegisterChatCommand("scaninstances", function()
+    --     addon:ScanSavedInstances()
+    -- end)
+end
 
-    -- LDBIcon:Register(addonShortName, LDB, self.db.profile.minimap)
-    self:RegisterChatCommand("toggleimcicon", "ToggleMinimapIcon")
+function core:OnEnable()
+    addon:Debug("OnEnable")
 
-    -- Setup mount list by zone
-    for k,v in pairs(INSTANCE_MOUNTS) do
-        local z = v.instanceType == INSTANCE_TYPE.world and INSTANCE_TYPE.world or v.zone
-        if not ZONES[z] then
-            ZONES[z] = {
-                name = z,
-                saved = false,
-                killedBosses = {},
-                mounts = {}
-            }
+    -- Register Events
+    self:RegisterEvent("UPDATE_INSTANCE_INFO", function() addon:UpdateToonData() end)
+    self:RegisterEvent("PLAYER_ENTERING_WORLD", function() addon:RefreshAll() end)
+    -- self:RegisterEvent("PLAYER_LOGOUT", function() addon:UpdateToonData() end)
+
+    self:RegisterEvent("ENCOUNTER_END", "RefreshLockInfo")
+    self:RegisterEvent("LFG_COMPLETION_REWARD", "RefreshLockInfo")
+    self:RegisterEvent("LFG_UPDATE_RANDOM_INFO", "RefreshLockInfo")
+    self:RegisterEvent("LFG_LOCK_INFO_RECEIVED", "RefreshLockInfo")
+
+    self:RegisterEvent("COMPANION_LEARNED", function() addon:RefreshAll() end)
+    self:RegisterEvent("COMPANION_UNLEARNED", function() addon:RefreshAll() end)
+    self:RegisterEvent("COMPANION_UPDATE", function() addon:RefreshAll() end)
+end
+
+function core:OnDisable()
+    addon:Debug("OnDisable")
+
+end
+
+-- General Helper Functions
+function addon:Debug(message)
+    if DEBUG then
+        core:Print(message)
+    end
+end
+
+function addon:toonInit()
+    local ti = db.Toons[thisToon.name] or {}
+    db.Toons[thisToon.name] = ti
+    ti.lClass, ti.class = UnitClass("player")
+    ti.level = UnitLevel("player")
+    ti.faction = thisToon.faction
+end
+
+function addon:InitCollectedMounts()
+    local collectedFilterCur, notCollectedFilterCur = C_MountJournal.GetCollectedFilterSetting(LE_MOUNT_JOURNAL_FILTER_COLLECTED), C_MountJournal.GetCollectedFilterSetting(LE_MOUNT_JOURNAL_FILTER_NOT_COLLECTED)
+    C_MountJournal.SetCollectedFilterSetting(LE_MOUNT_JOURNAL_FILTER_COLLECTED, true)
+    C_MountJournal.SetCollectedFilterSetting(LE_MOUNT_JOURNAL_FILTER_NOT_COLLECTED, true)
+
+    for i = 1, C_MountJournal.GetNumMounts() do
+        local name, id, icon, _, summonable, source, _, _, faction, hidden, owned = C_MountJournal.GetMountInfo(i)
+        local f = faction == 0 and "Horde" or "Alliance"
+        if INSTANCE_MOUNTS[name] and (faction == nil or f == thisToon.faction) then
+            -- IMCAddon:Debug(name)
+            local c = owned
+            if DEBUG_ALL_MOUNTS then c = false end
+            INSTANCE_MOUNTS[name].collected = c
         end
-        table.insert(ZONES[z].mounts, k)
     end
 
-    self:RegisterEvent("PLAYER_LOGIN")
-
-    -- For dumping
-    -- IMC_MOUNTS = INSTANCE_MOUNTS
-    -- IMC_ZONES = ZONES
+    C_MountJournal.SetCollectedFilterSetting(LE_MOUNT_JOURNAL_FILTER_COLLECTED, collectedFilterCur)
+    C_MountJournal.SetCollectedFilterSetting(LE_MOUNT_JOURNAL_FILTER_NOT_COLLECTED, notCollectedFilterCur)
 end
 
-function IMCAddon:OnEnable()
-    IMCAddon:Debug("OnEnable")
-end
-
-function IMCAddon:OnDisable()
-    IMCAddon:Debug("OnDisable")
-end
-
-function IMCAddon:PLAYER_LOGIN()
-    self:Debug("PLAYER_LOGIN")
-    self:ScanMounts()
-    self:ScanSavedInstances()
-end
-
-function IMCAddon:IconOnEnter(frame)
-    self:Debug("IconOnEnter")
-    self:ScanMounts()
-    self:ScanSavedInstances()
-
-    if tooltip then
-        LibQTip:Release(tooltip)
-        tooltip = nil
-    end
-
-    tooltip = LibQTip:Acquire(addonShortName, 2, "LEFT", "CENTER")
-    tooltip.anchorframe = frame
-    tooltip:Clear()
-    tooltip:SetAutoHideDelay(0.1, frame)
-    tooltip.OnRelease = function() tooltip = nil end
-    -- tooltip:SetScript("OnLeave", TooltipOnLeave)
-
-
-    local mountSections = MOUNT_SECTIONS()
-
-    for name,mount in pairs(INSTANCE_MOUNTS) do
-        if not mount.collected or DEBUG_ALL_MOUNTS then
-            if not mountSections[mount.expansion][mount.instanceType][mount.zone] then
-                mountSections[mount.expansion][mount.instanceType][mount.zone] = {}
+function addon:InitZoneTable()
+    zones = {}
+    for mountName,mount in pairs(INSTANCE_MOUNTS) do
+        if mount.collected == false then
+            local zn = mount.zone
+            if not zones[zn] then
+                zones[zn] = {
+                    locked = false,
+                    bosses = {}, -- string:"BossName" => bool:"Killed"
+                    mounts = {}, -- integer => string:"MountName"
+                }
             end
-            mountSections[mount.expansion][mount.instanceType][mount.zone][name] = mount
-
+            table.insert(zones[zn].mounts, mountName)
         end
     end
-    function addZoneRow(sections, exp, itype, diff)
-        local alphaZoneList = {}
-        local section = sections[exp][itype]
-        for name,value in pairs(section) do
-            alphaZoneList[#alphaZoneList+1] = name
-        end
-        table.sort(alphaZoneList)
-        for k,zoneName in pairs(alphaZoneList) do
-            local totalBosses = countUniqueBosses(section[zoneName])
-            local killedBosses = 0
-            local hasLock = false
-            for k,v in pairs(section[zoneName]) do
-                local bosses = type(v.dropsFrom) == "table" and v.dropsFrom or {v.dropsFrom}
-                for i,j in pairs(bosses) do
-                    if (v.instanceDifficulty == INSTANCE_DIFFICULTY.heroic or v.instanceDifficulty == INSTANCE_DIFFICULTY.mythic or
-                       v.instanceType == INSTANCE_TYPE.raid or v.instanceType == INSTANCE_TYPE.world) and
-                       j ~= "Trash" then -- AQ check
-                        hasLock = true
-                    end
-                    local z = itype == INSTANCE_TYPE.world and INSTANCE_TYPE.world or v.zone
-                    if ZONES[z].killedBosses[j] then
-                        killedBosses = killedBosses + 1
-                    end
+end
+
+function addon:ScanSavedInstances()
+    local ti = {}
+    for i = 1, GetNumSavedInstances() do
+        local instanceName, _, instanceReset, instanceDifficulty, locked, _, _, _, _, difficultyName, maxBosses = GetSavedInstanceInfo(i)
+        if locked and zones[instanceName] then -- Only care about instance if locked and need mount
+            if not ti[instanceName] then ti[instanceName] = {} end
+            local diff = INSTANCE_DIFFICULTY_MAP[instanceDifficulty]
+            if diff == INSTANCE_DIFFICULTY.normal or diff == INSTANCE_DIFFICULTY.heroic or diff == INSTANCE_DIFFICULTY.mythic then
+                ti[instanceName][diff] = {
+                    bosses = {},
+                    resetsAt = time() + instanceReset
+                }
+                -- addon:Debug(instanceReset)
+                for bossIndex = 1, maxBosses do
+                    local name, _, isKilled = GetSavedInstanceEncounterInfo(i, bossIndex)
+                    ti[instanceName][diff].bosses[name] = isKilled
                 end
             end
-            local name = "  "..zoneName
-            local bossCount = killedBosses.."/"..totalBosses
-            if not hasLock then
-                bossCount = ""
+        end
+    end
+    vars.db.Toons[thisToon.name].instances = ti
+end
+
+function addon:RefreshAll()
+    addon:RefreshMountStatus()
+    core:RequestLockInfo()
+end
+
+function addon:RefreshMountStatus()
+    addon:InitCollectedMounts()
+    addon:InitZoneTable()
+    addon:RefreshMountSections()
+end
+
+function addon:RefreshMountSections()
+    addon:Debug("RefreshMountSections")
+    mountSections = {
+        [EXPANSION.classic] = {
+            [INSTANCE_TYPE.dungeon] = {},
+            [INSTANCE_TYPE.raid] = {},
+        },
+        [EXPANSION.bc] = {
+            [INSTANCE_TYPE.dungeon] = {},
+            [INSTANCE_TYPE.raid] = {},
+        },
+        [EXPANSION.wrath] = {
+            [INSTANCE_TYPE.dungeon] = {},
+            [INSTANCE_TYPE.raid] = {},
+        },
+        [EXPANSION.cata] = {
+            [INSTANCE_TYPE.dungeon] = {},
+            [INSTANCE_TYPE.raid] = {},
+        },
+        [EXPANSION.mop] = {
+            [INSTANCE_TYPE.raid] = {},
+            -- [INSTANCE_TYPE.world] = {},
+        },
+        -- [EXPANSION.wod] = {
+        --     [INSTANCE_TYPE.world] = {},
+        -- }
+    }
+
+    for mountName,mount in pairs(INSTANCE_MOUNTS) do
+        if not mount.collected then
+            if not mountSections[mount.expansion][mount.instanceType][mount.zone] then
+                mountSections[mount.expansion][mount.instanceType][mount.zone] = {
+                    mounts = {},
+                    lineNum = nil
+                }
             end
-            local lineNum = tooltip:AddLine(name, bossCount)
-            -- tooltip:EnableMouse(true)
-
-
-            -- tooltip:SetLineScript(lineNum, "OnEnter", ZoneTooltipOnEnter, {
-            --     zone = name,
-            --     mounts = section[zoneName],
-            -- })
-            if hasLock then
-                tooltip:SetLineScript(lineNum, "OnEnter", DoNothing)
-                tooltip:SetCellScript(lineNum, 2, "OnEnter", ZoneTooltipOnEnter, {
-                    line = false,
-                    mounts = section[zoneName],
-                    bossStatus = bossCount
-                })
-                tooltip:SetCellScript(lineNum, 2, "OnLeave", ZoneTooltipOnLeave)
-            else
-                tooltip:SetLineScript(lineNum, "OnEnter", ZoneTooltipOnEnter, {
-                    line = true,
-                    mounts = section[zoneName],
-                    bossStatus = bossCount
-                })
-                tooltip:SetLineScript(lineNum, "OnLeave", ZoneTooltipOnLeave)
-            end
-
-
+            table.insert(mountSections[mount.expansion][mount.instanceType][mount.zone].mounts, mountName)
         end
     end
 
-
-    local classicDungeon = next(mountSections[EXPANSION.classic][INSTANCE_TYPE.dungeon]) ~= nil
-    local bcDungeon = next(mountSections[EXPANSION.bc][INSTANCE_TYPE.dungeon]) ~= nil
-    local wrathDungeon = next(mountSections[EXPANSION.wrath][INSTANCE_TYPE.dungeon]) ~= nil
-    local cataDungeon = next(mountSections[EXPANSION.cata][INSTANCE_TYPE.dungeon]) ~= nil
-
-
-    if classicDungeon or bcDungeon or wrathDungeon or cataDungeon then
-        tooltip:AddHeader("Dungeons", UnitName("player"))
-    end
-
-    if classicDungeon then
-        tooltip:AddSeparator(2, 0, 0, 0, 0)
-        tooltip:AddHeader(EXPANSION.classic)
-        addZoneRow(mountSections, EXPANSION.classic, INSTANCE_TYPE.dungeon)
-    end
-    if bcDungeon then
-        tooltip:AddSeparator(2, 0, 0, 0, 0)
-        tooltip:AddHeader(EXPANSION.bc)
-        addZoneRow(mountSections, EXPANSION.bc, INSTANCE_TYPE.dungeon)
-    end
-    if wrathDungeon then
-        tooltip:AddSeparator(2, 0, 0, 0, 0)
-        tooltip:AddHeader(EXPANSION.wrath)
-        addZoneRow(mountSections, EXPANSION.wrath, INSTANCE_TYPE.dungeon)
-    end
-    if cataDungeon then
-        tooltip:AddSeparator(2, 0, 0, 0, 0)
-        tooltip:AddHeader(EXPANSION.cata)
-        addZoneRow(mountSections, EXPANSION.cata, INSTANCE_TYPE.dungeon)
-    end
-
-
-    local classicRaid = next(mountSections[EXPANSION.classic][INSTANCE_TYPE.raid]) ~= nil
-    local bcRaid = next(mountSections[EXPANSION.bc][INSTANCE_TYPE.raid]) ~= nil
-    local wrathRaid = next(mountSections[EXPANSION.wrath][INSTANCE_TYPE.raid]) ~= nil
-    local cataRaid = next(mountSections[EXPANSION.cata][INSTANCE_TYPE.raid]) ~= nil
-    local mopRaid = next(mountSections[EXPANSION.mop][INSTANCE_TYPE.raid]) ~= nil
-    local mopWorld = next(mountSections[EXPANSION.mop][INSTANCE_TYPE.world]) ~= nil
-    local wodWorld = next(mountSections[EXPANSION.wod][INSTANCE_TYPE.world]) ~= nil
-
-    if classicRaid or bcRaid or wrathRaid or cataRaid or mopRaid then
-        tooltip:AddSeparator(15, 1, 1, 1, 0)
-        tooltip:AddHeader("Raids", UnitName("player"))
-    end
-
-    if classicRaid then
-        tooltip:AddSeparator(2, 0, 0, 0, 0)
-        tooltip:AddHeader(EXPANSION.classic)
-        addZoneRow(mountSections, EXPANSION.classic, INSTANCE_TYPE.raid)
-    end
-    if bcRaid then
-        tooltip:AddSeparator(2, 0, 0, 0, 0)
-        tooltip:AddHeader(EXPANSION.bc)
-        addZoneRow(mountSections, EXPANSION.bc, INSTANCE_TYPE.raid)
-    end
-    if wrathRaid then
-        tooltip:AddSeparator(2, 0, 0, 0, 0)
-        tooltip:AddHeader(EXPANSION.wrath)
-        addZoneRow(mountSections, EXPANSION.wrath, INSTANCE_TYPE.raid)
-    end
-    if cataRaid then
-        tooltip:AddSeparator(2, 0, 0, 0, 0)
-        tooltip:AddHeader(EXPANSION.cata)
-        addZoneRow(mountSections, EXPANSION.cata, INSTANCE_TYPE.raid)
-    end
-    if mopRaid then
-        tooltip:AddSeparator(2, 0, 0, 0, 0)
-        tooltip:AddHeader(EXPANSION.mop)
-        addZoneRow(mountSections, EXPANSION.mop, INSTANCE_TYPE.raid)
-    end
-
-    if mopWorld or wodWorld then
-        tooltip:AddSeparator(15, 1, 1, 1, 0)
-        tooltip:AddHeader("World", UnitName("player"))
-    end
-
-    if mopWorld then
-        tooltip:AddSeparator(2, 0, 0, 0, 0)
-        tooltip:AddHeader(EXPANSION.mop)
-        addZoneRow(mountSections, EXPANSION.mop, INSTANCE_TYPE.world)
-    end
-    if wodWorld then
-        tooltip:AddSeparator(2, 0, 0, 0, 0)
-        tooltip:AddHeader(EXPANSION.wod)
-        addZoneRow(mountSections, EXPANSION.wod, INSTANCE_TYPE.world)
-    end
-
-    -- Use smart anchoring code to anchor the tooltip to our frame
-    tooltip:SmartAnchorTo(frame)
-
-    -- tooltip:SetLineScript(1, "OnEnter", ShowZoneCellTooltip)
-
-
-    -- Show it, et voilà !
-    tooltip:Show()
+    IMF_MS = mountSections
 end
 
-function countUniqueBosses(t)
-    -- IMC_T = t
+function addon:UpdateToonData()
+    local t = db.Toons[thisToon.name]
+    addon:ScanSavedInstances()
+    t.lastUpdated = time()
+end
+
+function core:RequestLockInfo()
+    RequestRaidInfo()
+end
+
+function core:RefreshLockInfo() -- throttled lock update with retry
+    local now = GetTime()
+    if now > (core.lastrefreshlock or 0) + 1 then
+        core.lastrefreshlock = now
+        core:RequestLockInfo()
+    end
+    if now > (core.lastrefreshlocksched or 0) + 120 then
+        -- make sure we update any lockout info (sometimes there's server-side delay)
+        core.lastrefreshlocksched = now
+        core:ScheduleTimer("RequestLockInfo",5)
+        core:ScheduleTimer("RequestLockInfo",30)
+        core:ScheduleTimer("RequestLockInfo",60)
+        core:ScheduleTimer("RequestLockInfo",90)
+        core:ScheduleTimer("RequestLockInfo",120)
+    end
+end
+
+function core:HeaderFont()
+    if not addon.headerfont then
+        local temp = QTip:Acquire(addonName.."HeaderTooltip", 1, "LEFT")
+        addon.headerfont = CreateFont(addonName.."TooltipHeaderFont")
+        local hFont = temp:GetHeaderFont()
+        local hFontPath, hFontSize, _ = hFont:GetFont()
+        addon.headerfont:SetFont(hFontPath, fontSize.section, "OUTLINE")
+        QTip:Release(temp)
+    end
+    return addon.headerfont
+end
+
+-- function core:SectionTitleFont()
+--     if not addon.sectionfont then
+--         local temp = QTip:Acquire(addonName.."SectionTitleTooltip", 1, "LEFT")
+--         addon.sectionfont = CreateFont(addonName.."TooltipSectionTitleFont")
+--         local hFont = temp:GetHeaderFont()
+--         local hFontPath, hFontSize, _ = hFont:GetFont()
+--         addon.sectionfont:SetFont(hFontPath, fontSize.section, "MONOCHROME")
+--         QTip:Release(temp)
+--     end
+--     return addon.sectionfont
+-- end
+
+function core:RowFont()
+    if not addon.rowfont then
+        local temp = QTip:Acquire(addonName.."RowTooltip", 1, "LEFT")
+        addon.rowfont = CreateFont(addonName.."TooltipRowFont")
+        local rFont = temp:GetFont()
+        local rFontPath, rFontSize, rFontStyle  = rFont:GetFont()
+        addon.rowfont:SetFont(rFontPath, fontSize.standard, rFontStyle)
+        QTip:Release(temp)
+    end
+    return addon.rowfont
+end
+
+local function CountUniqueBosses(t)
     local count = 0
     local temp = {}
-    for k,v in pairs(t) do
-        local bosses = type(v.dropsFrom) == "table" and v.dropsFrom or {v.dropsFrom}
+    for k,mountName in pairs(t.mounts) do
+        local mount = INSTANCE_MOUNTS[mountName]
+        local bosses = type(mount.dropsFrom) == "table" and mount.dropsFrom or {mount.dropsFrom}
         for i,j in pairs(bosses) do
             if not temp[j] then
                 count = count + 1
@@ -763,164 +340,65 @@ function countUniqueBosses(t)
     return count
 end
 
-function IMCAddon:IconOnLeave(frame)
-    -- Release the tooltip
-    -- LibQTip:Release(tooltip)
-end
+local function ToonIsSaved(toonName, exp, zoneName, instanceDiff, bossName)
+    -- addon:Debug("ToonIsSaved")
+    -- addon:Debug(strjoin(" | ", toonName, exp, zoneName, instanceDiff, bossName))
+    if db.Toons[toonName].instances[zoneName] ~= nil then
+        local instance = nil
+        if exp == EXPANSION.wod or zoneName == "Siege of Orgrimmar" then
+            -- special check for change to instance locks
+            -- Locks for each difficulty, must check for specific difficulty
+            -- instanceDiff = mount.instanceDifficulty
+            instance = db.Toons[toonName].instances[zoneName][instanceDiff]
+        else
+            -- Locked to any difficulty is locked to all
+            instanceDiff, instance = next(db.Toons[toonName].instances[zoneName])
+        end
 
-function IMCAddon:ToggleMinimapIcon()
-    self.db.profile.minimap.hide = not self.db.profile.minimap.hide
-    if self.db.profile.minimap.hide then
-        LDBIcon:Hide(addonShortName)
+        if instance ~= nil then
+            if bossName == "" and mount.saveCheck then
+                bossName = mount.saveCheck -- AQ check
+            end
+            if instance.bosses[bossName] then
+                return true
+            elseif bossName == "" and mount.saveCheck == nil then -- ZA check
+                return true
+            else
+                return false
+            end
+        else
+            return false
+        end
     else
-        LDBIcon:Show(addonShortName)
+        return false
     end
 end
 
-function TooltipOnLeave()
-    IMCAddon:Debug("TooltipOnLeave")
+local function ColorCodeOpen(color)
+    return ColorCodeOpenRGB(color[1] or color.r,
+        color[2] or color.g,
+        color[3] or color.b,
+        color[4] or color.a or 1)
 end
 
-function DoNothing()
-
-end
-
-function ZoneTooltipOnEnter(cell, arg, ...)
-    IMCAddon:Debug("ZoneTooltipOnEnter")
-    local mounts = arg.mounts
-    local bossStatus = arg.bossStatus
-    local num = 0
-    -- IMCAddon:Debug(cell)
-    -- tooltipClosable = false
-    -- additionalInfoTip = LibQTip:Acquire(addonShortName.."AddInfoTip", 1, "LEFT")
-    -- additionalInfoTip:SetScript("OnLeave", CloseAdditionalInfoTip)
-    -- IMC_ARG = arg
-    openIndicator(3, "LEFT", "CENTER", "RIGHT")
-    if not arg.line then
-        indicatortip:AddHeader(bossStatus, "", UnitName("player"))
-        -- indicatortip:AddSeparator(3, 1, 1, 1, 0)
+local function ClassColorize(class, targetstring)
+    local c = RAID_CLASS_COLORS[class]
+    if c.colorStr then
+        c = "|c"..c.colorStr
+    else
+        c = ColorCodeOpen(c)
     end
-    for k,v in pairs(mounts) do
-        if not arg.line or num > 0 then
-            indicatortip:AddSeparator(2, 1, 1, 1, 0)
-        end
-        num = num + 1
-
-        indicatortip:AddHeader(k)
-        local bosses = type(v.dropsFrom) == "table" and v.dropsFrom or {v.dropsFrom}
-        for i,j in pairs(bosses) do
-            local dropsFrom = j
-            if v.note then
-                if dropsFrom == "" then
-                    dropsFrom = v.note
-                else
-                    dropsFrom = dropsFrom.." ("..v.note..")"
-                end
-            end
-
-            local mods = ""
-
-            local tmp = {}
-            if v.instanceDifficulty ~= INSTANCE_DIFFICULTY.all then
-                table.insert(tmp, v.instanceDifficulty)
-            end
-            if v.instanceSize ~= INSTANCE_SIZE.all then
-                table.insert(tmp, v.instanceSize)
-            end
-
-            if #tmp > 0 then
-                mods = strjoin(", ", unpack(tmp))
-            end
-
-            local z = v.instanceType == INSTANCE_TYPE.world and INSTANCE_TYPE.world or v.zone
-            local available = ""
-            if not arg.line then
-                if j ~= "" then
-                    available = ZONES[z].killedBosses[dropsFrom] and "Unavailable" or "Available"
-                elseif v.saveCheck then
-                    available = ZONES[z].killedBosses[v.saveCheck] and "Unavailable" or "Available"
-                else
-                    available = ZONES[z].saved and "Unavailable" or "Available"
-                end
-            end
-            indicatortip:AddLine(dropsFrom, mods, available)
-        end
-    end
-    -- finishIndicator(cell)
-    finishIndicator()
+    return c .. targetstring .. FONTEND
 end
 
-function ZoneTooltipOnLeave(cell, arg, ...)
-    IMCAddon:Debug("ZoneTooltipOnLeave")
-    -- tooltipClosable = true
-    CloseIndicator()
-end
-
-function IMCAddon:ScanMounts()
-    -- IMCAddon:Debug("ScanMounts")
-
-    local collectedFilterCur, notCollectedFilterCur = C_MountJournal.GetCollectedFilterSetting(LE_MOUNT_JOURNAL_FILTER_COLLECTED), C_MountJournal.GetCollectedFilterSetting(LE_MOUNT_JOURNAL_FILTER_NOT_COLLECTED)
-    C_MountJournal.SetCollectedFilterSetting(LE_MOUNT_JOURNAL_FILTER_COLLECTED, true)
-    C_MountJournal.SetCollectedFilterSetting(LE_MOUNT_JOURNAL_FILTER_NOT_COLLECTED, true)
-
-    local playerFaction = UnitFactionGroup("player")
-
-    for i = 1, C_MountJournal.GetNumMounts() do
-        local name, id, icon, _, summonable, source, _, _, faction, hidden, owned = C_MountJournal.GetMountInfo(i)
-        if INSTANCE_MOUNTS[name] and (faction == nil or FACTION[faction] == playerFaction) then
-            -- IMCAddon:Debug(name)
-            INSTANCE_MOUNTS[name].collected = owned
-        end
-    end
-
-    for k,v in pairs(INSTANCE_MOUNTS) do
-        if not v.collected then
-            -- IMCAddon:Debug("Not Collected: " .. k)
-        end
-    end
-
-    C_MountJournal.SetCollectedFilterSetting(LE_MOUNT_JOURNAL_FILTER_COLLECTED, collectedFilterCur)
-    C_MountJournal.SetCollectedFilterSetting(LE_MOUNT_JOURNAL_FILTER_NOT_COLLECTED, notCollectedFilterCur)
-end
-
-function IMCAddon:ScanSavedInstances()
-    for i = 1, GetNumSavedInstances() do
-        local instanceName, _, _, _, locked, _, _, _, _, _, maxBosses = GetSavedInstanceInfo(i)
-        if ZONES[instanceName] then
-            ZONES[instanceName].saved = locked
-            for bossIndex = 1, maxBosses do
-                local name, _, isKilled = GetSavedInstanceEncounterInfo(i, bossIndex)
-                ZONES[instanceName].killedBosses[name] = isKilled
-            end
-        end
-    end
-end
-
-function IMCAddon:AvailableMountInstances()
-    for k,v in pairs(ZONES) do
-        local availableMounts = {}
-        for i,m in pairs(v.mounts) do
-            if not INSTANCE_MOUNTS[m].collected then
-                local dropsFrom = INSTANCE_MOUNTS[m].dropsFrom
-                if not v.killedBosses[dropsFrom] then
-                    table.insert(availableMounts, m)
-                end
-            end
-        end
-        if next(availableMounts) ~= nil then
-            IMCAddon:Print(k .. " - " .. strjoin(", ", unpack(availableMounts)))
-        end
-    end
-end
-
-function openIndicator(...)
-    indicatortip = LibQTip:Acquire(addonShortName.."IndicatorTip", ...)
+local function openIndicator(...)
+    indicatortip = QTip:Acquire(addonName.."IndicatorTip", ...)
     indicatortip:Clear()
     -- indicatortip:SetHeaderFont(core:HeaderFont())
     -- indicatortip:SetScale(vars.db.Tooltip.Scale)
 end
 
-function finishIndicator(parent)
+local function finishIndicator(parent)
     parent = parent or tooltip
     indicatortip:SetAutoHideDelay(0.1, parent)
     indicatortip.OnRelease = function() indicatortip = nil end -- extra-safety: update our variable on auto-release
@@ -930,8 +408,430 @@ function finishIndicator(parent)
     indicatortip:Show()
 end
 
-function CloseIndicator()
+local function CloseIndicator()
     if indicatortip then
         indicatortip:Hide()
     end
+end
+
+local function DoNothing()
+
+end
+
+local function InstanceOnEnter(cell, arg, ...)
+    -- addon:Debug("ZoneTooltipOnEnter")
+    local mountNames = arg.mounts
+    local bossStatus = arg.bossStatus
+    local zoneName = arg.zoneName
+    local num = 0
+
+    openIndicator(3, "LEFT", "CENTER", "RIGHT")
+
+    local toonName = ""
+    if not arg.line then
+        zoneName = zoneName.." ("..bossStatus..")"
+        toonName = ClassColorize(arg.toonClass, arg.toonName)
+    end
+
+    indicatortip:AddHeader(GOLDFONT..zoneName..FONTEND, "", toonName)
+
+    if not arg.line and db.Toons[arg.toonName].instances[arg.zoneName] then
+        local _, instance = next(db.Toons[arg.toonName].instances[arg.zoneName])
+        local secondsToReset = instance.resetsAt - time()
+        -- local days = math.floor(secondsToReset / (60*60*24))
+        -- local r = secondsToReset - (days*60*60*24)
+        -- local hours = math.floor(r / (60*60))
+        -- r = r - (hours*60*60)
+        -- local minutes = math.floor(r / 60)
+
+
+        indicatortip:AddLine(YELLOWFONT.."Time Left:", "", SecondsToTime(secondsToReset))
+    end
+    -- if not arg.line then
+    --     local tmpm = mounts[0]
+    --     local z = tmpm.instanceType == INSTANCE_TYPE.world and INSTANCE_TYPE.world or tmpm.zone
+    --     indicatortip:AddHeader(bossStatus, next(mounts).zone, UnitName("player"))
+    --     -- indicatortip:AddSeparator(3, 1, 1, 1, 0)
+    -- end
+    for k,mountName in pairs(mountNames) do
+        local mount = INSTANCE_MOUNTS[mountName]
+        if not arg.line or num > 0 then
+            indicatortip:AddSeparator(2, 1, 1, 1, 0)
+        end
+        num = num + 1
+
+        indicatortip:AddHeader(YELLOWFONT..mountName..FONTEND)
+        local bosses = type(mount.dropsFrom) == "table" and mount.dropsFrom or {mount.dropsFrom}
+        for i,j in pairs(bosses) do
+            local dropsFrom = j
+            if mount.note then
+                if dropsFrom == "" then
+                    dropsFrom = mount.note
+                    if mount.saveCheck then
+                        dropsFrom = dropsFrom.." (Unavailable after"..mount.saveCheck..")"
+                    else
+                        dropsFrom = dropsFrom.." (Unavailable once saved)"
+                    end
+                else
+                    dropsFrom = dropsFrom.." ("..mount.note..")"
+                end
+            end
+
+            local mods = ""
+
+            local tmp = {}
+            if mount.instanceSize ~= INSTANCE_SIZE.all then
+                table.insert(tmp, mount.instanceSize)
+            end
+            if mount.instanceDifficulty ~= INSTANCE_DIFFICULTY.all then
+                table.insert(tmp, mount.instanceDifficulty)
+            end
+
+            if #tmp > 0 then
+                mods = strjoin(", ", unpack(tmp))
+            end
+
+            -- local z = mount.instanceType == INSTANCE_TYPE.world and INSTANCE_TYPE.world or mount.zone
+            local available = ""
+            if not arg.line then
+                local saved = ToonIsSaved(arg.toonName, mount.expansion, arg.zoneName, mount.instanceDifficulty, dropsFrom)
+                available = saved and REDFONT.."Unavailable" or GREENFONT.."Available"
+                available = available..FONTEND
+                -- if j ~= "" then
+                --     available = ZONES[z].killedBosses[dropsFrom] and "Unavailable" or "Available"
+                -- elseif mount.saveCheck then
+                --     available = ZONES[z].killedBosses[mount.saveCheck] and "Unavailable" or "Available"
+                -- else
+                --     available = ZONES[z].saved and "Unavailable" or "Available"
+                -- end
+            end
+            indicatortip:AddLine(dropsFrom, mods, available)
+        end
+    end
+    -- finishIndicator(cell)
+    finishIndicator()
+end
+
+local function InstanceOnLeave()
+    CloseIndicator()
+end
+
+local function AddInstanceRows(exp, itype)
+    local alphaZoneList = {}
+    local section = mountSections[exp][itype]
+    for name,value in pairs(section) do
+        alphaZoneList[#alphaZoneList+1] = name
+    end
+    table.sort(alphaZoneList)
+
+    for k,zoneName in pairs(alphaZoneList) do
+        -- local totalBosses = CountUniqueBosses(section[zoneName])
+        -- local killedBosses = 0
+        local hasLock = false
+        for k,mountName in pairs(section[zoneName].mounts) do
+            local mount = INSTANCE_MOUNTS[mountName]
+            local bosses = type(mount.dropsFrom) == "table" and mount.dropsFrom or {mount.dropsFrom}
+            if (mount.instanceDifficulty == INSTANCE_DIFFICULTY.heroic or mount.instanceDifficulty == INSTANCE_DIFFICULTY.mythic or
+               mount.instanceType == INSTANCE_TYPE.raid or mount.instanceType == INSTANCE_TYPE.world) then
+                hasLock = true
+            end
+            -- for i,bossName in pairs(bosses) do
+            --     if zones[mount.zone].bosses[bossName] then
+            --         killedBosses = killedBosses + 1
+            --     end
+            -- end
+        end
+        local name = zoneName
+        -- local bossCount = killedBosses.."/"..totalBosses
+        -- if not hasLock then
+        --     bossCount = ""
+        -- end
+        local lineNum = tooltip:AddLine(name)
+        section[zoneName].lineNum = lineNum
+        -- local lineNum = tooltip:AddLine(YELLOWFONT..name..FONTEND)
+        -- tooltip:EnableMouse(true)
+
+
+        tooltip:SetLineScript(lineNum, "OnEnter", InstanceOnEnter, {
+            line = true,
+            zoneName = zoneName,
+            mounts = section[zoneName].mounts,
+        })
+        tooltip:SetLineScript(lineNum, "OnLeave", InstanceOnLeave)
+
+        -- if hasLock then
+        --     tooltip:SetLineScript(lineNum, "OnEnter", DoNothing)
+        --     -- tooltip:SetCellScript(lineNum, 2, "OnEnter", InstanceOnEnter, {
+        --     --     line = false,
+        --     --     mounts = section[zoneName],
+        --     --     bossStatus = bossCount
+        --     -- })
+        --     -- tooltip:SetCellScript(lineNum, 2, "OnLeave", ZoneTooltipOnLeave)
+        -- else
+        --     tooltip:SetLineScript(lineNum, "OnEnter", InstanceOnEnter, {
+        --         line = true,
+        --         zoneName = zoneName,
+        --         mounts = section[zoneName].mounts,
+        --     })
+        --     tooltip:SetLineScript(lineNum, "OnLeave", InstanceOnLeave)
+        -- end
+
+
+    end
+end
+
+local function FillToonColumn(toonName, toonClass, colNum, exp, itype)
+    local alphaZoneList = {}
+    local section = mountSections[exp][itype]
+    for name,value in pairs(section) do
+        alphaZoneList[#alphaZoneList+1] = name
+    end
+    table.sort(alphaZoneList)
+
+    for k,zoneName in pairs(alphaZoneList) do
+        local lineNum = section[zoneName].lineNum
+        local totalBosses = CountUniqueBosses(section[zoneName])
+        local killedBosses = 0
+
+        local hasLock = false
+        for k,mountName in pairs(section[zoneName].mounts) do
+            local mount = INSTANCE_MOUNTS[mountName]
+            local bosses = type(mount.dropsFrom) == "table" and mount.dropsFrom or {mount.dropsFrom}
+            if (mount.instanceDifficulty == INSTANCE_DIFFICULTY.heroic or mount.instanceDifficulty == INSTANCE_DIFFICULTY.mythic or
+               mount.instanceType == INSTANCE_TYPE.raid or mount.instanceType == INSTANCE_TYPE.world) then
+                hasLock = true
+                local instance, instanceDiff
+                if db.Toons[toonName].instances[zoneName] ~= nil then
+                    if exp == EXPANSION.wod or zoneName == "Siege of Orgrimmar" then
+                        -- special check for change to instance locks
+                        -- Locks for each difficulty, must check for specific difficulty
+                        instanceDiff = mount.instanceDifficulty
+                        instance = db.Toons[toonName].instances[zoneName][instanceDiff]
+                    else
+                        -- Locked to any difficulty is locked to all
+                        instanceDiff, instance = next(db.Toons[toonName].instances[zoneName])
+                    end
+
+                    if instance ~= nil then
+                        for i,bossName in pairs(bosses) do
+                            if bossName == "" and mount.saveCheck then
+                                bossName = mount.saveCheck -- AQ check
+                            end
+                            if instance.bosses[bossName] then
+                                killedBosses = killedBosses + 1
+                            end
+
+                            if bossName == "" and mount.saveCheck == nil then -- ZA check
+                                killedBosses = 1
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        local bossCount = killedBosses.."/"..totalBosses
+        if not hasLock then
+            bossCount = ""
+        end
+
+        tooltip:SetCell(lineNum, colNum, ClassColorize(toonClass, bossCount))
+        if hasLock then
+            tooltip:SetCellScript(lineNum, colNum, "OnEnter", InstanceOnEnter, {
+                line = false,
+                zoneName = zoneName,
+                mounts = section[zoneName].mounts,
+                bossStatus = bossCount,
+                toonName = toonName,
+                toonClass = toonClass
+            })
+            tooltip:SetCellScript(lineNum, colNum, "OnLeave", InstanceOnLeave)
+        end
+        lineNum = lineNum + 1
+    end
+end
+
+local function UpdateTooltip(self,elap)
+    addon.updatetooltip_throttle = (addon.updatetooltip_throttle or 10) + elap
+    if addon.updatetooltip_throttle < 0.5 then return end
+    addon.updatetooltip_throttle = 0
+    if tooltip:IsShown() and tooltip.anchorframe then
+       core:ShowTooltip(tooltip.anchorframe)
+    end
+end
+
+function core:ShowTooltip(anchorframe)
+    -- addon:Debug("ShowTooltip")
+    if tooltip then QTip:Release(tooltip) end
+    tooltip = QTip:Acquire(addonName.."Tooltip", 1, "LEFT")
+    tooltip:SetCellMarginH(0)
+    tooltip.anchorframe = anchorframe
+    tooltip:SetScript("OnUpdate", UpdateTooltip)
+    tooltip:Clear()
+
+    tooltip:SetHeaderFont(core:HeaderFont())
+    tooltip:SetFont(core:RowFont())
+
+    local headLine = tooltip:AddHeader(GOLDFONT..addonName..FONTEND)
+
+    -- tooltip:SetHeaderFont(core:SectionTitleFont())
+
+    local classicDungeon = next(mountSections[EXPANSION.classic][INSTANCE_TYPE.dungeon]) ~= nil
+    local bcDungeon = next(mountSections[EXPANSION.bc][INSTANCE_TYPE.dungeon]) ~= nil
+    local wrathDungeon = next(mountSections[EXPANSION.wrath][INSTANCE_TYPE.dungeon]) ~= nil
+    local cataDungeon = next(mountSections[EXPANSION.cata][INSTANCE_TYPE.dungeon]) ~= nil
+
+
+    if classicDungeon or bcDungeon or wrathDungeon or cataDungeon then
+        tooltip:AddSeparator(2, 0, 0, 0, 0)
+        dungeonHLine = tooltip:AddHeader(GOLDFONT.."Dungeons"..FONTEND)
+    end
+
+    if classicDungeon then
+        -- tooltip:AddSeparator(2, 0, 0, 0, 0)
+        tooltip:AddHeader(YELLOWFONT..EXPANSION.classic..FONTEND)
+        AddInstanceRows(EXPANSION.classic, INSTANCE_TYPE.dungeon)
+    end
+    if bcDungeon then
+        if classicDungeon then tooltip:AddSeparator(2, 0, 0, 0, 0) end
+        tooltip:AddHeader(YELLOWFONT..EXPANSION.bc..FONTEND)
+        AddInstanceRows(EXPANSION.bc, INSTANCE_TYPE.dungeon)
+    end
+    if wrathDungeon then
+        if classicDungeon or bcDungeon then tooltip:AddSeparator(2, 0, 0, 0, 0) end
+        tooltip:AddHeader(YELLOWFONT..EXPANSION.wrath..FONTEND)
+        AddInstanceRows(EXPANSION.wrath, INSTANCE_TYPE.dungeon)
+    end
+    if cataDungeon then
+        if classicDungeon or bcDungeon or wrathDungeon then tooltip:AddSeparator(2, 0, 0, 0, 0) end
+        tooltip:AddHeader(YELLOWFONT..EXPANSION.cata..FONTEND)
+        AddInstanceRows(EXPANSION.cata, INSTANCE_TYPE.dungeon)
+    end
+
+
+    local classicRaid = next(mountSections[EXPANSION.classic][INSTANCE_TYPE.raid]) ~= nil
+    local bcRaid = next(mountSections[EXPANSION.bc][INSTANCE_TYPE.raid]) ~= nil
+    local wrathRaid = next(mountSections[EXPANSION.wrath][INSTANCE_TYPE.raid]) ~= nil
+    local cataRaid = next(mountSections[EXPANSION.cata][INSTANCE_TYPE.raid]) ~= nil
+    local mopRaid = next(mountSections[EXPANSION.mop][INSTANCE_TYPE.raid]) ~= nil
+    -- local mopWorld = next(mountSections[EXPANSION.mop][INSTANCE_TYPE.world]) ~= nil
+    -- local wodWorld = next(mountSections[EXPANSION.wod][INSTANCE_TYPE.world]) ~= nil
+
+    if classicRaid or bcRaid or wrathRaid or cataRaid or mopRaid then
+        tooltip:AddSeparator(15, 1, 1, 1, 0)
+        raidHLine = tooltip:AddHeader(GOLDFONT.."Raids"..FONTEND)
+    end
+
+    if classicRaid then
+        -- tooltip:AddSeparator(2, 0, 0, 0, 0)
+        tooltip:AddHeader(YELLOWFONT..EXPANSION.classic..FONTEND)
+        AddInstanceRows(EXPANSION.classic, INSTANCE_TYPE.raid)
+    end
+    if bcRaid then
+        if classicRaid then tooltip:AddSeparator(2, 0, 0, 0, 0) end
+        tooltip:AddHeader(YELLOWFONT..EXPANSION.bc..FONTEND)
+        AddInstanceRows(EXPANSION.bc, INSTANCE_TYPE.raid)
+    end
+    if wrathRaid then
+        if classicRaid or bcRaid then tooltip:AddSeparator(2, 0, 0, 0, 0) end
+        tooltip:AddHeader(YELLOWFONT..EXPANSION.wrath..FONTEND)
+        AddInstanceRows(EXPANSION.wrath, INSTANCE_TYPE.raid)
+    end
+    if cataRaid then
+        if classicRaid or bcRaid or wrathRaid then tooltip:AddSeparator(2, 0, 0, 0, 0) end
+        tooltip:AddHeader(YELLOWFONT..EXPANSION.cata..FONTEND)
+        AddInstanceRows(EXPANSION.cata, INSTANCE_TYPE.raid)
+    end
+    if mopRaid then
+        if classicRaid or bcRaid or wrathRaid or cataRaid then tooltip:AddSeparator(2, 0, 0, 0, 0) end
+        tooltip:AddHeader(YELLOWFONT..EXPANSION.mop..FONTEND)
+        AddInstanceRows(EXPANSION.mop, INSTANCE_TYPE.raid)
+    end
+
+    -- if mopWorld or wodWorld then
+    --     tooltip:AddSeparator(15, 1, 1, 1, 0)
+    --     tooltip:AddHeader("World", UnitName("player"))
+    -- end
+
+    -- if mopWorld then
+    --     tooltip:AddSeparator(2, 0, 0, 0, 0)
+    --     tooltip:AddHeader(YELLOWFONT..EXPANSION.mop..FONTEND)
+    --     AddInstanceRows(EXPANSION.mop, INSTANCE_TYPE.world)
+    -- end
+    -- if wodWorld then
+    --     tooltip:AddSeparator(2, 0, 0, 0, 0)
+    --     tooltip:AddHeader(YELLOWFONT..EXPANSION.wod..FONTEND)
+    --     AddInstanceRows(EXPANSION.wod, INSTANCE_TYPE.world)
+    -- end
+
+
+    -- Add Toon Columns
+    local toons = db.Toons
+
+    local alphaToonList = {}
+    for name,value in pairs(toons) do
+        alphaToonList[#alphaToonList+1] = name
+    end
+    table.sort(alphaToonList, function(a,b)
+        if a == thisToon.name then
+            return true
+        elseif b == thisToon.name then
+            return false
+        else
+            return a < b
+        end
+    end)
+
+
+    local toonNum = 1
+    for k,toonFullName in pairs(alphaToonList) do
+        toonNum = toonNum + 1
+        local toonName = strsplit(" - ", toonFullName)
+        tooltip:AddColumn("CENTER")
+        if classicDungeon or bcDungeon or wrathDungeon or cataDungeon then
+            tooltip:SetCell(dungeonHLine, toonNum, ClassColorize(db.Toons[toonFullName].class, toonName))
+        end
+
+        if classicDungeon then
+            FillToonColumn(toonFullName, db.Toons[toonFullName].class, toonNum, EXPANSION.classic, INSTANCE_TYPE.dungeon)
+        end
+        if bcDungeon then
+            FillToonColumn(toonFullName, db.Toons[toonFullName].class, toonNum, EXPANSION.bc, INSTANCE_TYPE.dungeon)
+        end
+        if wrathDungeon then
+            FillToonColumn(toonFullName, db.Toons[toonFullName].class, toonNum, EXPANSION.wrath, INSTANCE_TYPE.dungeon)
+        end
+        if cataDungeon then
+            FillToonColumn(toonFullName, db.Toons[toonFullName].class, toonNum, EXPANSION.cata, INSTANCE_TYPE.dungeon)
+        end
+
+
+        if classicRaid or bcRaid or wrathRaid or cataRaid or mopRaid then
+            tooltip:SetCell(raidHLine, toonNum, ClassColorize(db.Toons[toonFullName].class, toonName))
+        end
+
+        if classicRaid then
+            FillToonColumn(toonFullName, db.Toons[toonFullName].class, toonNum, EXPANSION.classic, INSTANCE_TYPE.raid)
+        end
+        if bcRaid then
+            FillToonColumn(toonFullName, db.Toons[toonFullName].class, toonNum, EXPANSION.bc, INSTANCE_TYPE.raid)
+        end
+        if wrathRaid then
+            FillToonColumn(toonFullName, db.Toons[toonFullName].class, toonNum, EXPANSION.wrath, INSTANCE_TYPE.raid)
+        end
+        if cataRaid then
+            FillToonColumn(toonFullName, db.Toons[toonFullName].class, toonNum, EXPANSION.cata, INSTANCE_TYPE.raid)
+        end
+        if mopRaid then
+            FillToonColumn(toonFullName, db.Toons[toonFullName].class, toonNum, EXPANSION.mop, INSTANCE_TYPE.raid)
+        end
+    end
+
+
+
+    tooltip:SmartAnchorTo(anchorframe)
+    tooltip:SetAutoHideDelay(0.1, anchorframe)
+    tooltip.OnRelease = function() tooltip = nil end
+
+    tooltip:Show()
 end
