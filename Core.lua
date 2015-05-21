@@ -187,6 +187,7 @@ function addon:InitZoneTable()
 end
 
 function addon:ScanSavedInstances()
+    tooltipCache = nil
     local ti = {}
     for i = 1, GetNumSavedInstances() do
         local instanceName, _, instanceReset, instanceDifficulty, locked, _, _, _, _, difficultyName, maxBosses = GetSavedInstanceInfo(i)
