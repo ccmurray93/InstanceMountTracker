@@ -11,7 +11,7 @@ vars.icon = vars.LDB and LibStub("LibDBIcon-1.0", true)
 local QTip = LibStub("LibQTip-1.0")
 
 local DEBUG = true
-local DEBUG_ALL_MOUNTS = true
+local DEBUG_ALL_MOUNTS = false
 
 local fontSize = {
     header = 16,
@@ -22,7 +22,7 @@ local fontSize = {
 local zones, mountSections
 local dataobject, db
 local tooltip, indicatortip
-local dungeonHLine, raidHLine
+local keepToons = {}
 
 local tooltipCache = {}
 
@@ -467,7 +467,7 @@ local function InstanceOnEnter(cell, arg, ...)
     if not arg.line and db.Toons[arg.toonName].instances[arg.zoneName] then
         local _, instance = next(db.Toons[arg.toonName].instances[arg.zoneName])
         local secondsToReset = instance.resetsAt - time()
-        indicatortip:AddLine(YELLOWFONT.."Time Left:", "", SecondsToTime(secondsToReset))
+        indicatortip:AddLine(YELLOWFONT.."Resets in:", "", SecondsToTime(secondsToReset))
     end
 
     for k,mountName in pairs(mountNames) do
@@ -510,7 +510,7 @@ local function InstanceOnEnter(cell, arg, ...)
 
             local available = ""
             if not arg.line then
-                local saved = ToonIsSaved(arg.toonName, mount.expansion, arg.zoneName, mount.instanceDifficulty, dropsFrom)
+                local saved = ToonIsSaved(arg.toonName, mount.expansion, arg.zoneName, mount.instanceDifficulty, mount.dropsFrom)
                 available = saved and REDFONT.."Unavailable" or GREENFONT.."Available"
                 available = available..FONTEND
             end
@@ -615,9 +615,15 @@ local function FillToonColumn(toonName, toonClass, colNum, exp, itype)
             bossCount = ""
         end
 
+        local done = (killedBosses == totalBosses)
+        if toonName ~= thisToon.name and not hasLock then
+            done = true
+        end
+
         table.insert(tooltipCache[itype][exp][k].toons, {
             value = ClassColorize(toonClass, bossCount),
-            done = (killedBosses == totalBosses),
+            done = done,
+            -- hasLock = hasLock,
             cellScript = {
                 line = false,
                 zoneName = zoneName,
@@ -640,34 +646,59 @@ local function UpdateTooltip(self,elap)
 end
 
 local function RemoveCompletedFromCache()
-    for _,itype in pairs({INSTANCE_TYPE.dungeon, INSTANCE_TYPE.raid}) do
+    keepToons = {}
+
+    local itypes = {INSTANCE_TYPE.dungeon, INSTANCE_TYPE.raid}
+
+    local toonCount = nil
+    for _,itype in pairs(itypes) do
         local keepInstanceType = false
-        for exp,instances in pairs(tooltipCache[itype]) do
-            local keepExp = false
-            for k,v in pairs(instances) do
-                local keep = false
-                for _,toon in pairs(v.toons) do
-                    -- addon:Debug(strjoin(" | ", v.zoneName, toon.value, toon.done and "Done" or "Not Done"))
-                    if not toon.done then
-                        keep = true
-                        break
+        if tooltipCache[itype] then
+            for exp,instances in pairs(tooltipCache[itype]) do
+                local keepExp = false
+                for k,v in pairs(instances) do
+                    local keep = false
+                    toonCount = toonCount and toonCount or #v.toons
+                    for t,toon in pairs(v.toons) do
+                        -- addon:Debug(strjoin(" | ", toon.cellScript.toonName, v.zoneName, toon.value, toon.done and "Done" or "Not Done"))
+                        if not toon.done then
+                            keepToons[t] = true
+                            keep = true
+                            -- break
+                        end
+                    end
+                    if not keep then
+                        tooltipCache[itype][exp][k] = nil
+                    else
+                        keepExp = true
                     end
                 end
-                if not keep then
-                    tooltipCache[itype][exp][k] = nil
+                if not keepExp then
+                    tooltipCache[itype][exp] = nil
                 else
-                    keepExp = true
+                    keepInstanceType = true
                 end
             end
-            if not keepExp then
-                tooltipCache[itype][exp] = nil
-            else
-                keepInstanceType = true
+
+            if not keepInstanceType then
+                tooltipCache[itype] = nil
             end
         end
+    end
 
-        if not keepInstanceType then
-            tooltipCache[itype] = nil
+    toonCount = toonCount and toonCount or 0
+    for t = 1, toonCount do
+        local keep = keepToons[t]
+        if not keep then
+            for _,itype in pairs(itypes) do
+                if tooltipCache[itype] then
+                    for exp,instances in pairs(tooltipCache[itype]) do
+                        for k,v in pairs(instances) do
+                            v.toons[t] = nil
+                        end
+                    end
+                end
+            end
         end
     end
 end
@@ -687,42 +718,54 @@ local function DisplayTooltipFromCache()
     local hasRaids = tooltipCache[INSTANCE_TYPE.raid]
 
     local toonList = {}
-    for _,toonFullName in pairs(GenerateAlphaToonList()) do
-        local toonName = strsplit(" - ", toonFullName)
-        table.insert(toonList, ClassColorize(db.Toons[toonFullName].class, toonName))
+    for k,toonFullName in pairs(GenerateAlphaToonList()) do
+        if keepToons[k] then
+            local toonName = strsplit(" - ", toonFullName)
+            table.insert(toonList, ClassColorize(db.Toons[toonFullName].class, toonName))
+        end
     end
 
     local first = true
 
     for _,itype in pairs({INSTANCE_TYPE.dungeon, INSTANCE_TYPE.raid}) do
-        if not first then tooltip:AddSeparator(8, 0, 0, 0, 0) end
-        first = false
-        tooltip:AddSeparator(2, 0, 0, 0, 0)
-        tooltip:AddHeader(GOLDFONT..itype..FONTEND, unpack(toonList))
-        for _,exp in pairs({EXPANSION.classic, EXPANSION.bc, EXPANSION.wrath, EXPANSION.cata, EXPANSION.mop, EXPANSION.wod}) do
-        -- for exp,instances in pairs(tooltipCache[INSTANCE_TYPE.dungeon]) do
-            local instances = tooltipCache[itype][exp]
-            if instances then
-                if count > 0 then tooltip:AddSeparator(2, 0, 0, 0, 0) end
-                tooltip:AddHeader(YELLOWFONT..exp..FONTEND)
-                for k,v in pairs(instances) do
-                    lineNum = tooltip:AddLine(v.zoneName)
-                    tooltip:SetLineScript(lineNum, "OnEnter", InstanceOnEnter, v.lineScript)
-                    tooltip:SetLineScript(lineNum, "OnLeave", InstanceOnLeave)
+        if tooltipCache[itype] then
+            if not first then tooltip:AddSeparator(8, 0, 0, 0, 0) end
+            first = false
+            tooltip:AddSeparator(2, 0, 0, 0, 0)
+            tooltip:AddHeader(GOLDFONT..itype..FONTEND, unpack(toonList))
+            for _,exp in pairs({EXPANSION.classic, EXPANSION.bc, EXPANSION.wrath, EXPANSION.cata, EXPANSION.mop, EXPANSION.wod}) do
+                local instances = tooltipCache[itype][exp]
+                if instances then
+                    if count > 0 then tooltip:AddSeparator(2, 0, 0, 0, 0) end
+                    tooltip:AddHeader(YELLOWFONT..exp..FONTEND)
+                    for k,v in pairs(instances) do
+                        lineNum = tooltip:AddLine(v.zoneName)
+                        tooltip:SetLineScript(lineNum, "OnEnter", InstanceOnEnter, v.lineScript)
+                        tooltip:SetLineScript(lineNum, "OnLeave", InstanceOnLeave)
 
-                    toonNum = 0
-                    for _,toon in pairs(v.toons) do
-                        toonNum = toonNum + 1
-                        tooltip:SetCell(lineNum, toonNum+1, toon.value)
-                        if v.hasLock then
-                            tooltip:SetCellScript(lineNum, toonNum+1, "OnEnter", InstanceOnEnter, toon.cellScript)
-                            tooltip:SetCellScript(lineNum, toonNum+1, "OnLeave", InstanceOnLeave)
+                        toonNum = 0
+                        for _,toon in pairs(v.toons) do
+                            toonNum = toonNum + 1
+                            local text = toon.value
+                            if toon.done and toon.cellScript.bossStatus ~= "" then
+                                text = "|TInterface\\RAIDFRAME\\ReadyCheck-Ready:16|t"
+                            end
+                            tooltip:SetCell(lineNum, toonNum+1, text)
+                            if v.hasLock then
+                                tooltip:SetCellScript(lineNum, toonNum+1, "OnEnter", InstanceOnEnter, toon.cellScript)
+                                tooltip:SetCellScript(lineNum, toonNum+1, "OnLeave", InstanceOnLeave)
+                            end
                         end
                     end
+                    count = count + 1
                 end
-                count = count + 1
             end
         end
+    end
+
+    if first then -- no mounts needed
+        tooltip:AddSeparator(2, 0, 0, 0, 0)
+        tooltip:AddLine("Looks like you've finished farming all available instances!")
     end
 end
 
@@ -740,10 +783,7 @@ function core:ShowTooltip(anchorframe)
 
     if not tooltipCache then
         tooltipCache = {}
-        -- local headLine = tooltip:AddHeader(GOLDFONT..addonName..FONTEND)
         tooltipCache.header = GOLDFONT..addonName..FONTEND
-
-        -- tooltip:SetHeaderFont(core:SectionTitleFont())
 
         local classicDungeon = next(mountSections[EXPANSION.classic][INSTANCE_TYPE.dungeon]) ~= nil
         local bcDungeon = next(mountSections[EXPANSION.bc][INSTANCE_TYPE.dungeon]) ~= nil
@@ -752,32 +792,23 @@ function core:ShowTooltip(anchorframe)
 
 
         if classicDungeon or bcDungeon or wrathDungeon or cataDungeon then
-            -- tooltip:AddSeparator(2, 0, 0, 0, 0)
-            -- dungeonHLine = tooltip:AddHeader(GOLDFONT.."Dungeons"..FONTEND)
             tooltipCache[INSTANCE_TYPE.dungeon] = {}
         end
 
         if classicDungeon then
             tooltipCache[INSTANCE_TYPE.dungeon][EXPANSION.classic] = {}
-            -- tooltip:AddHeader(YELLOWFONT..EXPANSION.classic..FONTEND)
             AddInstanceRows(EXPANSION.classic, INSTANCE_TYPE.dungeon)
         end
         if bcDungeon then
             tooltipCache[INSTANCE_TYPE.dungeon][EXPANSION.bc] = {}
-            -- if classicDungeon then tooltip:AddSeparator(2, 0, 0, 0, 0) end
-            -- tooltip:AddHeader(YELLOWFONT..EXPANSION.bc..FONTEND)
             AddInstanceRows(EXPANSION.bc, INSTANCE_TYPE.dungeon)
         end
         if wrathDungeon then
             tooltipCache[INSTANCE_TYPE.dungeon][EXPANSION.wrath] = {}
-            -- if classicDungeon or bcDungeon then tooltip:AddSeparator(2, 0, 0, 0, 0) end
-            -- tooltip:AddHeader(YELLOWFONT..EXPANSION.wrath..FONTEND)
             AddInstanceRows(EXPANSION.wrath, INSTANCE_TYPE.dungeon)
         end
         if cataDungeon then
             tooltipCache[INSTANCE_TYPE.dungeon][EXPANSION.cata] = {}
-            -- if classicDungeon or bcDungeon or wrathDungeon then tooltip:AddSeparator(2, 0, 0, 0, 0) end
-            -- tooltip:AddHeader(YELLOWFONT..EXPANSION.cata..FONTEND)
             AddInstanceRows(EXPANSION.cata, INSTANCE_TYPE.dungeon)
         end
 
@@ -791,37 +822,26 @@ function core:ShowTooltip(anchorframe)
         -- local wodWorld = next(mountSections[EXPANSION.wod][INSTANCE_TYPE.world]) ~= nil
 
         if classicRaid or bcRaid or wrathRaid or cataRaid or mopRaid then
-            -- tooltip:AddSeparator(15, 1, 1, 1, 0)
-            -- raidHLine = tooltip:AddHeader(GOLDFONT.."Raids"..FONTEND)
             tooltipCache[INSTANCE_TYPE.raid] = {}
         end
 
         if classicRaid then
-            -- tooltip:AddHeader(YELLOWFONT..EXPANSION.classic..FONTEND)
             tooltipCache[INSTANCE_TYPE.raid][EXPANSION.classic] = {}
             AddInstanceRows(EXPANSION.classic, INSTANCE_TYPE.raid)
         end
         if bcRaid then
-            -- if classicRaid then tooltip:AddSeparator(2, 0, 0, 0, 0) end
-            -- tooltip:AddHeader(YELLOWFONT..EXPANSION.bc..FONTEND)
             tooltipCache[INSTANCE_TYPE.raid][EXPANSION.bc] = {}
             AddInstanceRows(EXPANSION.bc, INSTANCE_TYPE.raid)
         end
         if wrathRaid then
-            -- if classicRaid or bcRaid then tooltip:AddSeparator(2, 0, 0, 0, 0) end
-            -- tooltip:AddHeader(YELLOWFONT..EXPANSION.wrath..FONTEND)
             tooltipCache[INSTANCE_TYPE.raid][EXPANSION.wrath] = {}
             AddInstanceRows(EXPANSION.wrath, INSTANCE_TYPE.raid)
         end
         if cataRaid then
-            -- if classicRaid or bcRaid or wrathRaid then tooltip:AddSeparator(2, 0, 0, 0, 0) end
-            -- tooltip:AddHeader(YELLOWFONT..EXPANSION.cata..FONTEND)
             tooltipCache[INSTANCE_TYPE.raid][EXPANSION.cata] = {}
             AddInstanceRows(EXPANSION.cata, INSTANCE_TYPE.raid)
         end
         if mopRaid then
-            -- if classicRaid or bcRaid or wrathRaid or cataRaid then tooltip:AddSeparator(2, 0, 0, 0, 0) end
-            -- tooltip:AddHeader(YELLOWFONT..EXPANSION.mop..FONTEND)
             tooltipCache[INSTANCE_TYPE.raid][EXPANSION.mop] = {}
             AddInstanceRows(EXPANSION.mop, INSTANCE_TYPE.raid)
         end
@@ -846,13 +866,8 @@ function core:ShowTooltip(anchorframe)
         -- Add Toon Columns
         local alphaToonList = GenerateAlphaToonList()
 
-        local toonNum = 1
         for k,toonFullName in pairs(alphaToonList) do
-            -- toonNum = toonNum + 1
             local toonName = strsplit(" - ", toonFullName)
-            -- if classicDungeon or bcDungeon or wrathDungeon or cataDungeon then
-            --     tooltip:SetCell(dungeonHLine, toonNum, ClassColorize(db.Toons[toonFullName].class, toonName))
-            -- end
 
             if classicDungeon then
                 FillToonColumn(toonFullName, db.Toons[toonFullName].class, toonNum, EXPANSION.classic, INSTANCE_TYPE.dungeon)
@@ -866,11 +881,6 @@ function core:ShowTooltip(anchorframe)
             if cataDungeon then
                 FillToonColumn(toonFullName, db.Toons[toonFullName].class, toonNum, EXPANSION.cata, INSTANCE_TYPE.dungeon)
             end
-
-
-            -- if classicRaid or bcRaid or wrathRaid or cataRaid or mopRaid then
-            --     tooltip:SetCell(raidHLine, toonNum, ClassColorize(db.Toons[toonFullName].class, toonName))
-            -- end
 
             if classicRaid then
                 FillToonColumn(toonFullName, db.Toons[toonFullName].class, toonNum, EXPANSION.classic, INSTANCE_TYPE.raid)
