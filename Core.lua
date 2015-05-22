@@ -738,10 +738,19 @@ local function DisplayTooltipFromCache()
                 if instances then
                     if count > 0 then tooltip:AddSeparator(2, 0, 0, 0, 0) end
                     tooltip:AddHeader(YELLOWFONT..exp..FONTEND)
+                    local hi = true
                     for k,v in pairs(instances) do
                         lineNum = tooltip:AddLine(v.zoneName)
                         tooltip:SetLineScript(lineNum, "OnEnter", InstanceOnEnter, v.lineScript)
                         tooltip:SetLineScript(lineNum, "OnLeave", InstanceOnLeave)
+
+                        if hi then
+                            tooltip:SetLineColor(lineNum, 1,1,1, 0.1)
+                            hi = false
+                        else
+                            tooltip:SetLineColor(lineNum, 1,1,1, 0)
+                            hi = true
+                        end
 
                         toonNum = 0
                         for _,toon in pairs(v.toons) do
