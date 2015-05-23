@@ -107,6 +107,7 @@ function module:BuildOptions()
                         set = function(info, value)
                                 db.Config.General.SelfFirst = value
                                 addon.alphatoonlist = nil
+                                addon:ClearTooltipCache()
                             end,
                     },
                     SelfAlways = {
@@ -117,6 +118,7 @@ function module:BuildOptions()
                         set = function(info, value)
                                 db.Config.General.SelfAlways = value
                                 addon.alphatoonlist = nil
+                                addon:ClearTooltipCache()
                             end,
                     },
                 },
