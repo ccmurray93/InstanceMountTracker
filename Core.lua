@@ -574,10 +574,18 @@ local function InstanceOnEnter(cell, arg, ...)
 
     indicatortip:AddHeader(GOLDFONT..zoneName..FONTEND, "", toonName)
 
-    if not arg.line and db.Toons[arg.toonName].instances[arg.zoneName] then
-        local _, instance = next(db.Toons[arg.toonName].instances[arg.zoneName])
-        local secondsToReset = instance.resetsAt - time()
-        indicatortip:AddLine(YELLOWFONT.."Resets in:", "", SecondsToTime(secondsToReset))
+    if not arg.line then
+        local secondsToReset = nil
+        if db.Toons[arg.toonName].instances[arg.zoneName] then
+            local _, instance = next(db.Toons[arg.toonName].instances[arg.zoneName])
+            secondsToReset = instance.resetsAt - time()
+        elseif arg.itype == INSTANCE_TYPE.world and db.Toons[arg.toonName].weeklyResetsAt then
+            -- addon:Debug()
+            secondsToReset = db.Toons[arg.toonName].weeklyResetsAt - time()
+        end
+        if secondsToReset then
+            indicatortip:AddLine(YELLOWFONT.."Resets in:", "", SecondsToTime(secondsToReset))
+        end
     end
 
     for k,mountName in pairs(mountNames) do
@@ -635,16 +643,33 @@ local function InstanceOnLeave()
     CloseIndicator()
 end
 
-local function AddInstanceRows(exp, itype)
+local function GenerateAlphaZoneList(exp, itype)
     local alphaZoneList = {}
     local section = mountSections[exp][itype]
     for name,value in pairs(section) do
         alphaZoneList[#alphaZoneList+1] = name
     end
-    table.sort(alphaZoneList)
+    table.sort(alphaZoneList, function(a,b)
+        if itype == INSTANCE_TYPE.world then
+            local _,ma = next(section[a].mounts)
+            ma = INSTANCE_MOUNTS[ma].dropsFrom
+            local _,mb = next(section[b].mounts)
+            mb = INSTANCE_MOUNTS[mb].dropsFrom
+            return ma < mb
+        else
+            return a < b
+        end
+    end)
+    return alphaZoneList
+end
+
+local function AddInstanceRows(exp, itype)
+    local section = mountSections[exp][itype]
+    local alphaZoneList = GenerateAlphaZoneList(exp, itype)
 
     for k,zoneName in pairs(alphaZoneList) do
         local hasLock = false
+        local worldBossName = nil
         for k,mountName in pairs(section[zoneName].mounts) do
             local mount = INSTANCE_MOUNTS[mountName]
             local bosses = type(mount.dropsFrom) == "table" and mount.dropsFrom or {mount.dropsFrom}
@@ -652,11 +677,15 @@ local function AddInstanceRows(exp, itype)
                mount.instanceType == INSTANCE_TYPE.raid or mount.instanceType == INSTANCE_TYPE.world) then
                 hasLock = true
             end
+            if mount.instanceType == INSTANCE_TYPE.world then
+                worldBossName = mount.dropsFrom
+            end
         end
 
         tooltipCache[itype][exp][k] = {
             zoneName = zoneName,
             hasLock = hasLock,
+            worldBossName = worldBossName,
             lineScript = {
                 line = true,
                 zoneName = zoneName,
@@ -668,12 +697,8 @@ local function AddInstanceRows(exp, itype)
 end
 
 local function FillToonColumn(toonName, toonClass, colNum, exp, itype)
-    local alphaZoneList = {}
     local section = mountSections[exp][itype]
-    for name,value in pairs(section) do
-        alphaZoneList[#alphaZoneList+1] = name
-    end
-    table.sort(alphaZoneList)
+    local alphaZoneList = GenerateAlphaZoneList(exp, itype)
 
     for k,zoneName in pairs(alphaZoneList) do
         local totalBosses = CountUniqueBosses(section[zoneName])
@@ -740,6 +765,7 @@ local function FillToonColumn(toonName, toonClass, colNum, exp, itype)
                 line = false,
                 zoneName = zoneName,
                 mounts = section[zoneName].mounts,
+                itype = itype,
                 bossStatus = bossCount,
                 toonName = toonName,
                 toonClass = toonClass
@@ -852,7 +878,8 @@ local function DisplayTooltipFromCache()
                     tooltip:AddHeader(YELLOWFONT..exp..FONTEND)
                     local hi = true
                     for k,v in pairs(instances) do
-                        lineNum = tooltip:AddLine(v.zoneName)
+                        local name = v.worldBossName and v.worldBossName or v.zoneName
+                        lineNum = tooltip:AddLine(name)
                         tooltip:SetLineScript(lineNum, "OnEnter", InstanceOnEnter, v.lineScript)
                         tooltip:SetLineScript(lineNum, "OnLeave", InstanceOnLeave)
 
