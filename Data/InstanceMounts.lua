@@ -354,41 +354,45 @@ vars.data.INSTANCE_MOUNTS = {
 
 
     -- Mists of Pandaria
-    -- ["Heavenly Onyx Cloud Serpent"] = {
-    --     zone =               "Kun-Lai Summit",
-    --     dropsFrom =          "Sha of Anger",
-    --     instanceType =       vars.data.INSTANCE_TYPE.world,
-    --     instanceDifficulty = vars.data.INSTANCE_DIFFICULTY.all,
-    --     instanceSize =       vars.data.INSTANCE_SIZE.all,
-    --     expansion =          vars.data.EXPANSION.mop
-    -- },
+    ["Heavenly Onyx Cloud Serpent"] = {
+        zone =               "Kun-Lai Summit",
+        dropsFrom =          "Sha of Anger",
+        questID =            32099,
+        instanceType =       vars.data.INSTANCE_TYPE.world,
+        instanceDifficulty = vars.data.INSTANCE_DIFFICULTY.all,
+        instanceSize =       vars.data.INSTANCE_SIZE.all,
+        expansion =          vars.data.EXPANSION.mop
+    },
 
-    -- ["Son of Galleon"] = {
-    --     zone =               "Valley of the Four Winds",
-    --     dropsFrom =          "Galleon",
-    --     instanceType =       vars.data.INSTANCE_TYPE.world,
-    --     instanceDifficulty = vars.data.INSTANCE_DIFFICULTY.all,
-    --     instanceSize =       vars.data.INSTANCE_SIZE.all,
-    --     expansion =          vars.data.EXPANSION.mop
-    -- },
+    ["Son of Galleon"] = {
+        zone =               "Valley of the Four Winds",
+        dropsFrom =          "Galleon",
+        questID =            32098,
+        instanceType =       vars.data.INSTANCE_TYPE.world,
+        instanceDifficulty = vars.data.INSTANCE_DIFFICULTY.all,
+        instanceSize =       vars.data.INSTANCE_SIZE.all,
+        expansion =          vars.data.EXPANSION.mop
+    },
 
-    -- ["Thundering Cobalt Cloud Serpent"] = {
-    --     zone =               "Isle of Thunder",
-    --     dropsFrom =          "Nalak",
-    --     instanceType =       vars.data.INSTANCE_TYPE.world,
-    --     instanceDifficulty = vars.data.INSTANCE_DIFFICULTY.all,
-    --     instanceSize =       vars.data.INSTANCE_SIZE.all,
-    --     expansion =          vars.data.EXPANSION.mop
-    -- },
+    ["Thundering Cobalt Cloud Serpent"] = {
+        zone =               "Isle of Thunder",
+        dropsFrom =          "Nalak",
+        questID =            32518,
+        instanceType =       vars.data.INSTANCE_TYPE.world,
+        instanceDifficulty = vars.data.INSTANCE_DIFFICULTY.all,
+        instanceSize =       vars.data.INSTANCE_SIZE.all,
+        expansion =          vars.data.EXPANSION.mop
+    },
 
-    -- ["Cobalt Primordial Direhorn"] = {
-    --     zone =               "Isle of Giants",
-    --     dropsFrom =          "Oondasta",
-    --     instanceType =       vars.data.INSTANCE_TYPE.world,
-    --     instanceDifficulty = vars.data.INSTANCE_DIFFICULTY.all,
-    --     instanceSize =       vars.data.INSTANCE_SIZE.all,
-    --     expansion =          vars.data.EXPANSION.mop
-    -- },
+    ["Cobalt Primordial Direhorn"] = {
+        zone =               "Isle of Giants",
+        dropsFrom =          "Oondasta",
+        questID =            32519,
+        instanceType =       vars.data.INSTANCE_TYPE.world,
+        instanceDifficulty = vars.data.INSTANCE_DIFFICULTY.all,
+        instanceSize =       vars.data.INSTANCE_SIZE.all,
+        expansion =          vars.data.EXPANSION.mop
+    },
 
     ["Astral Cloud Serpent"] = {
         zone =               "Mogu'shan Vaults",
@@ -424,15 +428,16 @@ vars.data.INSTANCE_MOUNTS = {
         instanceDifficulty = vars.data.INSTANCE_DIFFICULTY.mythic,
         instanceSize =       vars.data.INSTANCE_SIZE.all,
         expansion =          vars.data.EXPANSION.mop
-    }
+    },
 
     -- Warlords of Draenor
-    -- ["Solar Spirehawk"] = {
-    --     zone =               "Spires of Arak",
-    --     dropsFrom =          "Rukhmar",
-    --     instanceType =       vars.data.INSTANCE_TYPE.world,
-    --     instanceDifficulty = vars.data.INSTANCE_DIFFICULTY.all,
-    --     instanceSize =       vars.data.INSTANCE_SIZE.all,
-    --     expansion =          vars.data.EXPANSION.wod
-    -- }
+    ["Solar Spirehawk"] = {
+        zone =               "Spires of Arak",
+        dropsFrom =          "Rukhmar",
+        questID =            37464,
+        instanceType =       vars.data.INSTANCE_TYPE.world,
+        instanceDifficulty = vars.data.INSTANCE_DIFFICULTY.all,
+        instanceSize =       vars.data.INSTANCE_SIZE.all,
+        expansion =          vars.data.EXPANSION.wod
+    }
 }

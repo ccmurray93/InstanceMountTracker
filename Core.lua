@@ -28,7 +28,7 @@ local tooltipCache = {}
 
 local thisToon = {
     name = UnitName("player") .. " - " .. GetRealmName(),
-    faction = UnitFactionGroup("player")
+    faction = UnitFactionGroup("player"),
 }
 
 local INSTANCE_TYPE, INSTANCE_DIFFICULTY, INSTANCE_SIZE,
@@ -45,7 +45,7 @@ local WHITEFONT = HIGHLIGHT_FONT_COLOR_CODE
 local GRAYFONT = GRAY_FONT_COLOR_CODE
 
 vars.defaultDB = {
-    DBVersion = 1,
+    DBVersion = 2,
     Toons = {}, -- table key: "ToonName - Realm"; value:
         -- class: string
         -- level: integer
@@ -55,6 +55,8 @@ vars.defaultDB = {
             -- key: "difficulty" (Normal, Heroic, Mythic); value:
                 -- bosses key: "BossName"; value: boolean (Killed)
                 -- resetsAt: integer
+        -- worldBosses key: "DropsFrom"; value: boolean (Killed)
+        -- weeklyResetsAt: integer
     MinimapIcon = {
         hide = false
     },
@@ -144,9 +146,14 @@ end
 function addon:toonInit()
     local ti = db.Toons[thisToon.name] or {}
     db.Toons[thisToon.name] = ti
+    ti.instances = ti.instances or {}
+    ti.worldBosses = ti.worldBosses or {}
     ti.lClass, ti.class = UnitClass("player")
     ti.level = UnitLevel("player")
     ti.faction = thisToon.faction
+    if ti.weeklyResetsAt == nil or ti.weeklyResetsAt < time() then
+        ti.weeklyResetsAt = addon:GetNextWeeklyResetTime()
+    end
 end
 
 function addon:InitCollectedMounts()
@@ -210,6 +217,22 @@ function addon:ScanSavedInstances()
     vars.db.Toons[thisToon.name].instances = ti
 end
 
+function addon:ScanWorldBosses()
+    tooltipCache = nil
+    for _,exp in pairs({EXPANSION.mop, EXPANSION.wod}) do
+        local mountZones = mountSections[exp][INSTANCE_TYPE.world]
+        for _,zone in pairs(mountZones) do
+            for _,mountName in pairs(zone.mounts) do
+                local questID = INSTANCE_MOUNTS[mountName].questID
+                local dropsFrom = INSTANCE_MOUNTS[mountName].dropsFrom
+                local questCompleted = IsQuestFlaggedCompleted(questID)
+                -- addon:Debug(strjoin(" | ", mountName, questID, dropsFrom, questCompleted and "Dead" or "Not Dead"))
+                db.Toons[thisToon.name].worldBosses[dropsFrom] = questCompleted
+            end
+        end
+    end
+end
+
 function addon:RefreshAll()
     addon:RefreshMountStatus()
     core:RequestLockInfo()
@@ -243,11 +266,11 @@ function addon:RefreshMountSections()
         },
         [EXPANSION.mop] = {
             [INSTANCE_TYPE.raid] = {},
-            -- [INSTANCE_TYPE.world] = {},
+            [INSTANCE_TYPE.world] = {},
         },
-        -- [EXPANSION.wod] = {
-        --     [INSTANCE_TYPE.world] = {},
-        -- }
+        [EXPANSION.wod] = {
+            [INSTANCE_TYPE.world] = {},
+        }
     }
 
     for mountName,mount in pairs(INSTANCE_MOUNTS) do
@@ -261,13 +284,16 @@ function addon:RefreshMountSections()
             table.insert(mountSections[mount.expansion][mount.instanceType][mount.zone].mounts, mountName)
         end
     end
-
-    IMF_MS = mountSections
+    -- IMF_MS = mountSections
 end
 
 function addon:UpdateToonData()
     local t = db.Toons[thisToon.name]
+    if t.weeklyResetsAt == nil or t.weeklyResetsAt < time() then
+        t.weeklyResetsAt = addon:GetNextWeeklyResetTime()
+    end
     addon:ScanSavedInstances()
+    addon:ScanWorldBosses()
     t.lastUpdated = time()
 end
 
@@ -344,6 +370,81 @@ local function CountUniqueBosses(t)
     return count
 end
 
+-- returns how many hours the server time is ahead of local time
+-- convert local time -> server time: add this value
+-- convert server time -> local time: subtract this value
+function addon:GetServerOffset()
+    local serverDay = CalendarGetDate() - 1 -- 1-based starts on Sun
+    local localDay = tonumber(date("%w")) -- 0-based starts on Sun
+    local serverHour, serverMinute = GetGameTime()
+    local localHour, localMinute = tonumber(date("%H")), tonumber(date("%M"))
+    if serverDay == (localDay + 1)%7 then -- server is a day ahead
+        serverHour = serverHour + 24
+    elseif localDay == (serverDay + 1)%7 then -- local is a day ahead
+        localHour = localHour + 24
+    end
+    local server = serverHour + serverMinute / 60
+    local localT = localHour + localMinute / 60
+    local offset = floor((server - localT) * 2 + 0.5) / 2
+    return offset
+end
+
+function addon:GetRegion()
+    if not addon.region then
+        local reg
+        reg = GetCVar("portal")
+        if reg == "public-test" then -- PTR uses US region resets, despite the misleading realm name suffix
+            reg = "US"
+        end
+        if not reg or #reg ~= 2 then
+            reg = (GetCVar("realmList") or ""):match("^(%a+)%.")
+        end
+        if not reg or #reg ~= 2 then -- other test realms?
+            reg = (GetRealmName() or ""):match("%((%a%a)%)")
+        end
+        reg = reg and reg:upper()
+        if reg and #reg == 2 then
+            addon.region = reg
+        end
+    end
+    return addon.region
+end
+
+function addon:GetNextDailyResetTime()
+    local resettime = GetQuestResetTime()
+    if not resettime or resettime <= 0 or -- ticket 43: can fail during startup
+        -- also right after a daylight savings rollover, when it returns negative values >.<
+        resettime > 24*3600+30 then -- can also be wrong near reset in an instance
+        return nil
+    end
+    return time() + resettime
+end
+
+function addon:GetNextWeeklyResetTime()
+    if not addon.resetDays then
+        local region = addon:GetRegion()
+        if not region then return nil end
+        addon.resetDays = {}
+        if region == "US" then
+            addon.resetDays["2"] = true -- tuesday
+        elseif region == "EU" then
+            addon.resetDays["3"] = true -- wednesday
+        elseif region == "CN" or region == "KR" or region == "TW" then -- XXX: codes unconfirmed
+            addon.resetDays["4"] = true -- thursday
+        else
+            addon.resetDays["2"] = true -- tuesday?
+        end
+    end
+    local offset = addon:GetServerOffset() * 3600
+    local nightlyReset = addon:GetNextDailyResetTime()
+    if not nightlyReset then return nil end
+    --while date("%A",nightlyReset+offset) ~= WEEKDAY_TUESDAY do
+    while not addon.resetDays[date("%w",nightlyReset+offset)] do
+        nightlyReset = nightlyReset + 24 * 3600
+    end
+    return nightlyReset
+end
+
 local function ToonIsSaved(toonName, exp, zoneName, instanceDiff, bossName)
     -- addon:Debug("ToonIsSaved")
     -- addon:Debug(strjoin(" | ", toonName, exp, zoneName, instanceDiff, bossName))
@@ -362,6 +463,7 @@ local function ToonIsSaved(toonName, exp, zoneName, instanceDiff, bossName)
         if instance ~= nil then
             if instance.resetsAt < time() then -- instance lock is old, remove
                 db.Toons[toonName].instances[zoneName] = nil
+                return false
             else
                 if bossName == "" and mount.saveCheck then
                     bossName = mount.saveCheck -- AQ check
@@ -376,6 +478,14 @@ local function ToonIsSaved(toonName, exp, zoneName, instanceDiff, bossName)
             end
         else
             return false
+        end
+    elseif db.Toons[toonName].worldBosses and db.Toons[toonName].worldBosses[bossName] then
+        local weeklyResetsAt = db.Toons[toonName].weeklyResetsAt and db.Toons[toonName].weeklyResetsAt or 0
+        if weeklyResetsAt < time() then
+            db.Toons[toonName].worldBosses = {}
+            return false
+        else
+            return true
         end
     else
         return false
@@ -606,6 +716,8 @@ local function FillToonColumn(toonName, toonClass, colNum, exp, itype)
                             end
                         end
                     end
+                elseif db.Toons[toonName].worldBosses and db.Toons[toonName].worldBosses[mount.dropsFrom] then
+                    killedBosses = 1
                 end
             end
         end
@@ -727,7 +839,7 @@ local function DisplayTooltipFromCache()
 
     local first = true
 
-    for _,itype in pairs({INSTANCE_TYPE.dungeon, INSTANCE_TYPE.raid}) do
+    for _,itype in pairs({INSTANCE_TYPE.dungeon, INSTANCE_TYPE.raid, INSTANCE_TYPE.world}) do
         if tooltipCache[itype] then
             if not first then tooltip:AddSeparator(8, 0, 0, 0, 0) end
             first = false
@@ -827,8 +939,8 @@ function core:ShowTooltip(anchorframe)
         local wrathRaid = next(mountSections[EXPANSION.wrath][INSTANCE_TYPE.raid]) ~= nil
         local cataRaid = next(mountSections[EXPANSION.cata][INSTANCE_TYPE.raid]) ~= nil
         local mopRaid = next(mountSections[EXPANSION.mop][INSTANCE_TYPE.raid]) ~= nil
-        -- local mopWorld = next(mountSections[EXPANSION.mop][INSTANCE_TYPE.world]) ~= nil
-        -- local wodWorld = next(mountSections[EXPANSION.wod][INSTANCE_TYPE.world]) ~= nil
+        local mopWorld = next(mountSections[EXPANSION.mop][INSTANCE_TYPE.world]) ~= nil
+        local wodWorld = next(mountSections[EXPANSION.wod][INSTANCE_TYPE.world]) ~= nil
 
         if classicRaid or bcRaid or wrathRaid or cataRaid or mopRaid then
             tooltipCache[INSTANCE_TYPE.raid] = {}
@@ -855,21 +967,18 @@ function core:ShowTooltip(anchorframe)
             AddInstanceRows(EXPANSION.mop, INSTANCE_TYPE.raid)
         end
 
-        -- if mopWorld or wodWorld then
-        --     tooltip:AddSeparator(15, 1, 1, 1, 0)
-        --     tooltip:AddHeader("World", UnitName("player"))
-        -- end
+        if mopWorld or wodWorld then
+            tooltipCache[INSTANCE_TYPE.world] = {}
+        end
 
-        -- if mopWorld then
-        --     tooltip:AddSeparator(2, 0, 0, 0, 0)
-        --     tooltip:AddHeader(YELLOWFONT..EXPANSION.mop..FONTEND)
-        --     AddInstanceRows(EXPANSION.mop, INSTANCE_TYPE.world)
-        -- end
-        -- if wodWorld then
-        --     tooltip:AddSeparator(2, 0, 0, 0, 0)
-        --     tooltip:AddHeader(YELLOWFONT..EXPANSION.wod..FONTEND)
-        --     AddInstanceRows(EXPANSION.wod, INSTANCE_TYPE.world)
-        -- end
+        if mopWorld then
+            tooltipCache[INSTANCE_TYPE.world][EXPANSION.mop] = {}
+            AddInstanceRows(EXPANSION.mop, INSTANCE_TYPE.world)
+        end
+        if wodWorld then
+            tooltipCache[INSTANCE_TYPE.world][EXPANSION.wod] = {}
+            AddInstanceRows(EXPANSION.wod, INSTANCE_TYPE.world)
+        end
 
 
         -- Add Toon Columns
@@ -905,6 +1014,12 @@ function core:ShowTooltip(anchorframe)
             end
             if mopRaid then
                 FillToonColumn(toonFullName, db.Toons[toonFullName].class, toonNum, EXPANSION.mop, INSTANCE_TYPE.raid)
+            end
+            if mopWorld then
+                FillToonColumn(toonFullName, db.Toons[toonFullName].class, toonNum, EXPANSION.mop, INSTANCE_TYPE.world)
+            end
+            if wodWorld then
+                FillToonColumn(toonFullName, db.Toons[toonFullName].class, toonNum, EXPANSION.wod, INSTANCE_TYPE.world)
             end
         end
     end

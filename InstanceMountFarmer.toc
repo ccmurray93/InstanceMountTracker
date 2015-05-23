@@ -5,7 +5,21 @@
 ## Version: 0.1
 ## SavedVariables: InstanceMountFarmerDB
 
-embeds.xml
+lib\LibStub\LibStub.lua
+lib\CallbackHandler-1.0\CallbackHandler-1.0.xml
+lib\AceAddon-3.0\AceAddon-3.0.xml
+lib\AceEvent-3.0\AceEvent-3.0.xml
+lib\AceTimer-3.0\AceTimer-3.0.xml
+lib\AceGUI-3.0\AceGUI-3.0.xml
+lib\AceConfig-3.0\AceConfig-3.0.xml
+lib\AceConsole-3.0\AceConsole-3.0.xml
+
+
+lib\LibDataBroker-1.1\LibDataBroker-1.1.lua
+lib\LibDBIcon-1.0\lib.xml
+
+lib\LibQTip-1.0\lib.xml
 
 Core.lua
 Data\InstanceMounts.lua
+Config.lua
