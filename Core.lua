@@ -60,6 +60,17 @@ vars.defaultDB = {
     MinimapIcon = {
         hide = false
     },
+    Config = {
+        General = {
+            -- general
+            ShowHints = true,
+            -- character
+            ShowServer = false,
+            SelfFirst = true,
+            SelfAlways = false,
+        },
+        -- Character = {},
+    },
 }
 
 function core:OnInitialize()
@@ -89,16 +100,14 @@ function core:OnInitialize()
         -- end,
         OnEnter = function(frame) core:ShowTooltip(frame) end,
         OnLeave = function(frame) end,
-        -- OnClick = function(frame, button)
-        --     if button == "MiddleButton" then
-        --         ToggleFriendsFrame(4) -- open Blizzard Raid window
-        --         RaidInfoFrame:Show()
-        --     elseif button == "LeftButton" then
-        --        addon:ToggleDetached()
-        --     else
-        --         config:ShowConfig()
-        --     end
-        -- end
+        OnClick = function(frame, button)
+            if button == "LeftButton" then
+                ToggleFriendsFrame(4) -- open Blizzard Raid window
+                RaidInfoFrame:Show()
+            elseif button == "RightButton" then
+                vars.config:ShowConfig()
+            end
+        end
     })
     if vars.icon then
         vars.icon:Register(addonName, vars.dataobject, db.MinimapIcon)
@@ -194,7 +203,7 @@ function addon:InitZoneTable()
 end
 
 function addon:ScanSavedInstances()
-    tooltipCache = nil
+    addon:ClearTooltipCache()
     local ti = {}
     for i = 1, GetNumSavedInstances() do
         local instanceName, _, instanceReset, instanceDifficulty, locked, _, _, _, _, difficultyName, maxBosses = GetSavedInstanceInfo(i)
@@ -218,7 +227,7 @@ function addon:ScanSavedInstances()
 end
 
 function addon:ScanWorldBosses()
-    tooltipCache = nil
+    addon:ClearTooltipCache()
     for _,exp in pairs({EXPANSION.mop, EXPANSION.wod}) do
         local mountZones = mountSections[exp][INSTANCE_TYPE.world]
         for _,zone in pairs(mountZones) do
@@ -231,6 +240,10 @@ function addon:ScanWorldBosses()
             end
         end
     end
+end
+
+function addon:ClearTooltipCache()
+    tooltipCache = nil
 end
 
 function addon:RefreshAll()
@@ -246,7 +259,7 @@ end
 
 function addon:RefreshMountSections()
     addon:Debug("RefreshMountSections")
-    tooltipCache = nil
+    addon:ClearTooltipCache()
     mountSections = {
         [EXPANSION.classic] = {
             [INSTANCE_TYPE.dungeon] = {},
@@ -540,10 +553,14 @@ local function GenerateAlphaToonList()
             alphaToonList[#alphaToonList+1] = name
         end
         table.sort(alphaToonList, function(a,b)
-            if a == thisToon.name then
-                return true
-            elseif b == thisToon.name then
-                return false
+            if db.Config.General.SelfFirst then
+                if a == thisToon.name then
+                    return true
+                elseif b == thisToon.name then
+                    return false
+                else
+                    return a < b
+                end
             else
                 return a < b
             end
@@ -798,11 +815,9 @@ local function RemoveCompletedFromCache()
                     local keep = false
                     toonCount = toonCount and toonCount or #v.toons
                     for t,toon in pairs(v.toons) do
-                        -- addon:Debug(strjoin(" | ", toon.cellScript.toonName, v.zoneName, toon.value, toon.done and "Done" or "Not Done"))
                         if not toon.done then
                             keepToons[t] = true
                             keep = true
-                            -- break
                         end
                     end
                     if not keep then
@@ -824,9 +839,10 @@ local function RemoveCompletedFromCache()
         end
     end
 
+    local alphaToonList = GenerateAlphaToonList()
     toonCount = toonCount and toonCount or 0
     for t = 1, toonCount do
-        local keep = keepToons[t]
+        local keep = keepToons[t] or (db.Config.General.SelfAlways and alphaToonList[t] == thisToon.name)
         if not keep then
             for _,itype in pairs(itypes) do
                 if tooltipCache[itype] then
@@ -858,7 +874,12 @@ local function DisplayTooltipFromCache()
     local toonList = {}
     for k,toonFullName in pairs(GenerateAlphaToonList()) do
         if keepToons[k] then
-            local toonName = strsplit(" - ", toonFullName)
+            local toonName = ""
+            if db.Config.General.ShowServer then
+                toonName = toonFullName
+            else
+                toonName = strsplit(" - ", toonFullName)
+            end
             table.insert(toonList, ClassColorize(db.Toons[toonFullName].class, toonName))
         end
     end
@@ -914,6 +935,15 @@ local function DisplayTooltipFromCache()
     if first then -- no mounts needed
         tooltip:AddSeparator(2, 0, 0, 0, 0)
         tooltip:AddLine("Looks like you've finished farming all available instances!")
+    end
+
+    if db.Config.General.ShowHints then
+        tooltip:AddSeparator(10, 0, 0, 0, 0)
+        local hintLine, hintCol
+        hintLine, hintCol = tooltip:AddLine()
+        tooltip:SetCell(hintLine, hintCol, "|cffffff00Left-click|r to show Blizzard's Raid Information", "LEFT", tooltip:GetColumnCount())
+        hintLine, hintCol = tooltip:AddLine()
+        tooltip:SetCell(hintLine, hintCol, "|cffffff00Right-click|r to open the options menu", "LEFT", tooltip:GetColumnCount())
     end
 end
 
