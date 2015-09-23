@@ -1,4 +1,4 @@
-## Interface: 60100
+## Interface: 60200
 ## Title: Instance Mount Farmer
 ## Notes: Tracks instance mounts you need across all characters.
 ## Author: Myxini@Hyjal
