@@ -631,8 +631,7 @@ local function InstanceOnEnter(cell, arg, ...)
     end
 
     if ignore then
-        local l, c = indicatortip:AddLine()
-        indicatortip:SetCell(l, c, "Character ignored for this instance", "LEFT", indicatortip:GetColumnCount())
+        indicatortip:AddLine("Character ignored for this instance")
     else
         for k,mountName in pairs(mountNames) do
             local mount = INSTANCE_MOUNTS[mountName]
