@@ -91,7 +91,7 @@ function module:BuildOptions()
                     CharactersHeader = {
                         order = 3,
                         type = "header",
-                        name = "Characters",
+                        name = "Character settings",
                     },
                     ShowServer = {
                         type = "toggle",
@@ -118,6 +118,26 @@ function module:BuildOptions()
                         set = function(info, value)
                                 db.Config.General.SelfAlways = value
                                 addon.alphatoonlist = nil
+                                addon:ClearTooltipCache()
+                            end,
+                    },
+                    HideRowWhenDone = {
+                        type = "toggle",
+                        name = "Hide row when done",
+                        desc = "Hide a row when all characters have completed the instance",
+                        order = 3.4,
+                        set = function(info, value)
+                                db.Config.General.HideRowWhenDone = value
+                                addon:ClearTooltipCache()
+                            end,
+                    },
+                    HideColumnWhenDone = {
+                        type = "toggle",
+                        name = "Hide column when done",
+                        desc = "Hide a column when that character has completed all instances",
+                        order = 3.5,
+                        set = function(info, value)
+                                db.Config.General.HideColumnWhenDone = value
                                 addon:ClearTooltipCache()
                             end,
                     },

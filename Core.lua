@@ -68,6 +68,8 @@ vars.defaultDB = {
             ShowServer = false,
             SelfFirst = true,
             SelfAlways = false,
+            HideRowWhenDone = true, -- TODO
+            HideColumnWhenDone = true, -- TODO
         },
         -- Character = {},
     },
@@ -774,6 +776,11 @@ local function FillToonColumn(toonName, toonClass, colNum, exp, itype)
             done = true
         end
 
+        -- if toonName == "Dora - Hyjal" then
+        --     done = true
+        -- end
+        if hasLock then done = true end
+
         table.insert(tooltipCache[itype][exp][k].toons, {
             value = ClassColorize(toonClass, bossCount),
             done = done,
@@ -795,7 +802,7 @@ local function UpdateTooltip(self,elap)
     addon.updatetooltip_throttle = (addon.updatetooltip_throttle or 10) + elap
     if addon.updatetooltip_throttle < 0.5 then return end
     addon.updatetooltip_throttle = 0
-    if tooltip:IsShown() and tooltip.anchorframe then
+    if not tooltip:IsShown() and tooltip.anchorframe then
        core:ShowTooltip(tooltip.anchorframe)
     end
 end
@@ -803,7 +810,7 @@ end
 local function RemoveCompletedFromCache()
     keepToons = {}
 
-    local itypes = {INSTANCE_TYPE.dungeon, INSTANCE_TYPE.raid}
+    local itypes = {INSTANCE_TYPE.dungeon, INSTANCE_TYPE.raid, INSTANCE_TYPE.world}
 
     local toonCount = nil
     for _,itype in pairs(itypes) do
@@ -820,7 +827,7 @@ local function RemoveCompletedFromCache()
                             keep = true
                         end
                     end
-                    if not keep then
+                    if not keep and db.Config.General.HideRowWhenDone then
                         tooltipCache[itype][exp][k] = nil
                     else
                         keepExp = true
@@ -842,6 +849,9 @@ local function RemoveCompletedFromCache()
     local alphaToonList = GenerateAlphaToonList()
     toonCount = toonCount and toonCount or 0
     for t = 1, toonCount do
+        if not db.Config.General.HideColumnWhenDone then
+            keepToons[t] = true
+        end
         local keep = keepToons[t] or (db.Config.General.SelfAlways and alphaToonList[t] == thisToon.name)
         if not keep then
             for _,itype in pairs(itypes) do
@@ -862,7 +872,7 @@ local function DisplayTooltipFromCache()
 
     RemoveCompletedFromCache()
 
-    for _,_ in pairs(db.Toons) do tooltip:AddColumn("CENTER") end
+    -- for _,_ in pairs(db.Toons) do tooltip:AddColumn("CENTER") end
 
     local count = 0
     local toonNum = 0
@@ -881,6 +891,7 @@ local function DisplayTooltipFromCache()
                 toonName = strsplit(" - ", toonFullName)
             end
             table.insert(toonList, ClassColorize(db.Toons[toonFullName].class, toonName))
+            tooltip:AddColumn("CENTER")
         end
     end
 
