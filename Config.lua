@@ -54,7 +54,7 @@ function module:BuildOptions()
             General = {
                 order = 1,
                 type = "group",
-                name = "General settings",
+                name = "Display settings",
                 get = function(info)
                         return db.Config.General[info[#info]]
                 end,
@@ -81,12 +81,12 @@ function module:BuildOptions()
                             vars.icon:Refresh(addonName)
                         end,
                     },
-                    ShowHints = {
-                        type = "toggle",
-                        name = "Show tooltip hints",
-                        desc = "Show usage hints at bottom of tooltip",
-                        order = 2.2,
-                    },
+                    -- ShowHints = {
+                    --     type = "toggle",
+                    --     name = "Show tooltip hints",
+                    --     desc = "Show usage hints at bottom of tooltip",
+                    --     order = 2.2,
+                    -- },
 
                     CharactersHeader = {
                         order = 3,
@@ -113,7 +113,7 @@ function module:BuildOptions()
                     SelfAlways = {
                         type = "toggle",
                         name = "Show self always",
-                        desc = "Always show current character",
+                        desc = "Always show current character (takes precedence over Character settings)",
                         order = 3.3,
                         set = function(info, value)
                                 db.Config.General.SelfAlways = value
@@ -140,6 +140,139 @@ function module:BuildOptions()
                                 db.Config.General.HideColumnWhenDone = value
                                 addon:ClearTooltipCache()
                             end,
+                    },
+                },
+            },
+            LevelFilter = {
+                order = 2,
+                type = "group",
+                name = "Level Filters",
+                get = function(info)
+                        return db.Config.LevelFilter[info[#info]]
+                end,
+                set = function(info, value)
+                        -- addon.debug(info[#info].." set to: "..tostring(value))
+                        db.Config.LevelFilter[info[#info]] = value
+                        addon:ClearTooltipCache()
+                end,
+                args = {
+                    ExpLvlHeader = {
+                        order = 2,
+                        type = "header",
+                        name = "Expansion Level Filter",
+                    },
+                    ExpLvlDesc = {
+                        order = 2.1,
+                        type = "description",
+                        name = "The below settings control the minimum level a character must have before being included for a specific expansion's dungeon/raid lockouts in the tooltip",
+                    },
+                    ClassicDungMinLevel = {
+                        order = 2.21,
+                        type = "range",
+                        name = "Classic Dungeons",
+                        desc = "Level a character must be to be included in the tooltip for a Classic Dungeon",
+                        min = 1,
+                        max = 100,
+                        bigStep = 1,
+                    },
+                    ClassicRaidMinLevel = {
+                        order = 2.22,
+                        type = "range",
+                        name = "Classic Raids",
+                        desc = "Level a character must be to be included in the tooltip for a Classic Raid",
+                        min = 1,
+                        max = 100,
+                        bigStep = 1,
+                    },
+                    BCDungMinLevel = {
+                        order = 2.31,
+                        type = "range",
+                        name = "BC Dungeons",
+                        desc = "Level a character must be to be included in the tooltip for a Burning Crusade Dungeon",
+                        min = 1,
+                        max = 100,
+                        bigStep = 1,
+                    },
+                    BCRaidMinLevel = {
+                        order = 2.32,
+                        type = "range",
+                        name = "BC Raids",
+                        desc = "Level a character must be to be included in the tooltip for a Burning Crusade Raid",
+                        min = 1,
+                        max = 100,
+                        bigStep = 1,
+                    },
+                    WrathDungMinLevel = {
+                        order = 2.41,
+                        type = "range",
+                        name = "Wrath Dungeons",
+                        desc = "Level a character must be to be included in the tooltip for a Wrath of the Lich King Dungeon",
+                        min = 1,
+                        max = 100,
+                        bigStep = 1,
+                    },
+                    WrathRaidMinLevel = {
+                        order = 2.42,
+                        type = "range",
+                        name = "Wrath Raids",
+                        desc = "Level a character must be to be included in the tooltip for a Wrath of the Lich King Raid",
+                        min = 1,
+                        max = 100,
+                        bigStep = 1,
+                    },
+                    CataDungMinLevel = {
+                        order = 2.51,
+                        type = "range",
+                        name = "Cata Dungeons",
+                        desc = "Level a character must be to be included in the tooltip for a Cataclysm Dungeon",
+                        min = 1,
+                        max = 100,
+                        bigStep = 1,
+                    },
+                    CataRaidMinLevel = {
+                        order = 2.52,
+                        type = "range",
+                        name = "Cata Raids",
+                        desc = "Level a character must be to be included in the tooltip for a Cataclysm Raid",
+                        min = 1,
+                        max = 100,
+                        bigStep = 1,
+                    },
+                    MopRaidMinLevel = {
+                        order = 2.61,
+                        type = "range",
+                        name = "MoP Raids",
+                        desc = "Level a character must be to be included in the tooltip for a Mists of Pandaria Raid",
+                        min = 1,
+                        max = 100,
+                        bigStep = 1,
+                    },
+                    MopWorldMinLevel = {
+                        order = 2.62,
+                        type = "range",
+                        name = "MoP World",
+                        desc = "Level a character must be to be included in the tooltip for a Mists of Pandaria World boss",
+                        min = 1,
+                        max = 100,
+                        bigStep = 1,
+                    },
+                    -- WodRaidMinLevel = {
+                    --     order = 2.71,
+                    --     type = "range",
+                    --     name = "Wod Raids",
+                    --     desc = "Level a character must be to be included in the tooltip for a Warlords of Draenor Raid",
+                    --     min = 1,
+                    --     max = 100,
+                    --     bigStep = 1,
+                    -- },
+                    WodWorldMinLevel = {
+                        order = 2.72,
+                        type = "range",
+                        name = "WoD World",
+                        desc = "Level a character must be to be included in the tooltip for a Warlords of Draenor World boss",
+                        min = 1,
+                        max = 100,
+                        bigStep = 1,
                     },
                 },
             },

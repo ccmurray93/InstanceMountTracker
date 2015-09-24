@@ -12,6 +12,7 @@ local QTip = LibStub("LibQTip-1.0")
 
 local DEBUG = true
 local DEBUG_ALL_MOUNTS = false
+local DEBUG_ALL_DONE = false
 
 local fontSize = {
     header = 16,
@@ -71,7 +72,19 @@ vars.defaultDB = {
             HideRowWhenDone = true, -- TODO
             HideColumnWhenDone = true, -- TODO
         },
-        -- Character = {},
+        LevelFilter = {
+            ClassicDungMinLevel = 60,
+            ClassicRaidMinLevel = 60,
+            BCDungMinLevel = 70,
+            BCRaidMinLevel = 70,
+            WrathDungMinLevel = 80,
+            WrathRaidMinLevel = 80,
+            CataDungMinLevel = 85,
+            CataRaidMinLevel = 85,
+            MopRaidMinLevel = 90,
+            MopWorldMinLevel = 90,
+            WodWorldMinLevel = 100,
+        },
     },
 }
 
@@ -582,13 +595,23 @@ local function InstanceOnEnter(cell, arg, ...)
     local bossStatus = arg.bossStatus
     local zoneName = arg.zoneName
     local num = 0
+    local ignore = arg.ignore
 
     openIndicator(3, "LEFT", "CENTER", "RIGHT")
 
     local toonName = ""
+
+
     if not arg.line then
-        zoneName = zoneName.." ("..bossStatus..")"
-        toonName = ClassColorize(arg.toonClass, arg.toonName)
+        if not ignore then
+            zoneName = zoneName.." ("..bossStatus..")"
+        end
+        if db.Config.General.ShowServer then
+            toonName = toonName
+        else
+            toonName = strsplit(" - ", toonName)
+        end
+        toonName = ClassColorize(arg.toonClass, toonName)
     end
 
     indicatortip:AddHeader(GOLDFONT..zoneName..FONTEND, "", toonName)
@@ -607,54 +630,58 @@ local function InstanceOnEnter(cell, arg, ...)
         end
     end
 
-    for k,mountName in pairs(mountNames) do
-        local mount = INSTANCE_MOUNTS[mountName]
-        if not arg.line or num > 0 then
-            indicatortip:AddSeparator(2, 1, 1, 1, 0)
-        end
-        num = num + 1
+    if ignore then
+        local l, c = indicatortip:AddLine()
+        indicatortip:SetCell(l, c, "Character ignored for this instance", "LEFT", indicatortip:GetColumnCount())
+    else
+        for k,mountName in pairs(mountNames) do
+            local mount = INSTANCE_MOUNTS[mountName]
+            if not arg.line or num > 0 then
+                indicatortip:AddSeparator(2, 1, 1, 1, 0)
+            end
+            num = num + 1
 
-        indicatortip:AddHeader(YELLOWFONT..mountName..FONTEND)
-        local bosses = type(mount.dropsFrom) == "table" and mount.dropsFrom or {mount.dropsFrom}
-        for i,j in pairs(bosses) do
-            local dropsFrom = j
-            if mount.note then
-                if dropsFrom == "" then
-                    dropsFrom = mount.note
-                    if mount.saveCheck then
-                        dropsFrom = dropsFrom.." (Unavailable after "..mount.saveCheck..")"
+            indicatortip:AddHeader(YELLOWFONT..mountName..FONTEND)
+            local bosses = type(mount.dropsFrom) == "table" and mount.dropsFrom or {mount.dropsFrom}
+            for i,j in pairs(bosses) do
+                local dropsFrom = j
+                if mount.note then
+                    if dropsFrom == "" then
+                        dropsFrom = mount.note
+                        if mount.saveCheck then
+                            dropsFrom = dropsFrom.." (Unavailable after "..mount.saveCheck..")"
+                        else
+                            dropsFrom = dropsFrom.." (Unavailable once locked)"
+                        end
                     else
-                        dropsFrom = dropsFrom.." (Unavailable once locked)"
+                        dropsFrom = dropsFrom.." ("..mount.note..")"
                     end
-                else
-                    dropsFrom = dropsFrom.." ("..mount.note..")"
                 end
-            end
 
-            local mods = ""
+                local mods = ""
 
-            local tmp = {}
-            if mount.instanceSize ~= INSTANCE_SIZE.all then
-                table.insert(tmp, mount.instanceSize)
-            end
-            if mount.instanceDifficulty ~= INSTANCE_DIFFICULTY.all then
-                table.insert(tmp, mount.instanceDifficulty)
-            end
+                local tmp = {}
+                if mount.instanceSize ~= INSTANCE_SIZE.all then
+                    table.insert(tmp, mount.instanceSize)
+                end
+                if mount.instanceDifficulty ~= INSTANCE_DIFFICULTY.all then
+                    table.insert(tmp, mount.instanceDifficulty)
+                end
 
-            if #tmp > 0 then
-                mods = strjoin(", ", unpack(tmp))
-            end
+                if #tmp > 0 then
+                    mods = strjoin(", ", unpack(tmp))
+                end
 
-            local available = ""
-            if not arg.line then
-                local saved = ToonIsSaved(arg.toonName, mount.expansion, arg.zoneName, mount.instanceDifficulty, mount.dropsFrom)
-                available = saved and REDFONT.."Unavailable" or GREENFONT.."Available"
-                available = available..FONTEND
+                local available = ""
+                if not arg.line then
+                    local saved = ToonIsSaved(arg.toonName, mount.expansion, arg.zoneName, mount.instanceDifficulty, mount.dropsFrom)
+                    available = saved and REDFONT.."Unavailable" or GREENFONT.."Available"
+                    available = available..FONTEND
+                end
+                indicatortip:AddLine(dropsFrom, mods, available)
             end
-            indicatortip:AddLine(dropsFrom, mods, available)
         end
     end
-    -- finishIndicator(cell)
     finishIndicator()
 end
 
@@ -715,63 +742,123 @@ local function AddInstanceRows(exp, itype)
     end
 end
 
+local function IgnoreToon(toonName, exp, itype)
+    local ignore = false
+
+    local toonLevel = db.Toons[toonName].level
+    local minLevel = 1
+    local isDung = (itype == INSTANCE_TYPE.dungeon)
+    local isRaid = (itype == INSTANCE_TYPE.raid)
+    local isWorld = (itype == INSTANCE_TYPE.world)
+    if exp == EXPANSION.classic then
+        if isDung then
+            minLevel = db.Config.LevelFilter.ClassicDungMinLevel
+        elseif isRaid then
+            minLevel = db.Config.LevelFilter.ClassicRaidMinLevel
+        end
+    elseif exp == EXPANSION.bc then
+        if isDung then
+            minLevel = db.Config.LevelFilter.BCDungMinLevel
+        elseif isRaid then
+        end
+            minLevel = db.Config.LevelFilter.BCRaidMinLevel
+    elseif exp == EXPANSION.wrath then
+        if isDung then
+            minLevel = db.Config.LevelFilter.WrathDungMinLevel
+        elseif isRaid then
+            minLevel = db.Config.LevelFilter.WrathRaidMinLevel
+        end
+    elseif exp == EXPANSION.cata then
+        if isDung then
+            minLevel = db.Config.LevelFilter.CataDungMinLevel
+        elseif isRaid then
+            minLevel = db.Config.LevelFilter.CataRaidMinLevel
+        end
+    elseif exp == EXPANSION.mop then
+        if isWorld then
+            minLevel = db.Config.LevelFilter.MopWorldMinLevel
+        elseif isRaid then
+            minLevel = db.Config.LevelFilter.MopRaidMinLevel
+        end
+    elseif exp == EXPANSION.wod then
+        if isWorld then
+            minLevel = db.Config.LevelFilter.WodWorldMinLevel
+        -- elseif isRaid then
+        --     minLevel = db.Config.LevelFilter.WodRaidMinLevel
+        end
+    end
+
+    return toonLevel < minLevel
+end
+
 local function FillToonColumn(toonName, toonClass, colNum, exp, itype)
     local section = mountSections[exp][itype]
     local alphaZoneList = GenerateAlphaZoneList(exp, itype)
 
+    local ignore = IgnoreToon(toonName, exp, itype)
+    -- addon:Debug("Ignore["..toonName.."]["..exp.."]["..itype.."] = "..(ignore and "true" or "false"))
+
     for k,zoneName in pairs(alphaZoneList) do
         local totalBosses = CountUniqueBosses(section[zoneName])
         local killedBosses = 0
-
+        local done = false
         local hasLock = false
-        for _,mountName in pairs(section[zoneName].mounts) do
-            local mount = INSTANCE_MOUNTS[mountName]
-            local bosses = type(mount.dropsFrom) == "table" and mount.dropsFrom or {mount.dropsFrom}
-            if (mount.instanceDifficulty == INSTANCE_DIFFICULTY.heroic or mount.instanceDifficulty == INSTANCE_DIFFICULTY.mythic or
-               mount.instanceType == INSTANCE_TYPE.raid or mount.instanceType == INSTANCE_TYPE.world) then
-                hasLock = true
-                local instance, instanceDiff
-                if db.Toons[toonName].instances[zoneName] ~= nil then
-                    if exp == EXPANSION.wod or zoneName == "Siege of Orgrimmar" then
-                        -- special check for change to instance locks
-                        -- Locks for each difficulty, must check for specific difficulty
-                        instanceDiff = mount.instanceDifficulty
-                        instance = db.Toons[toonName].instances[zoneName][instanceDiff]
-                    else
-                        -- Locked to any difficulty is locked to all
-                        instanceDiff, instance = next(db.Toons[toonName].instances[zoneName])
-                    end
+        local bossCount = ""
 
-                    if instance ~= nil then
-                        if instance.resetsAt < time() then -- instance lock is old, remove
-                            db.Toons[toonName].instances[zoneName] = nil
+        if not ignore then
+            hasLock = false
+            for _,mountName in pairs(section[zoneName].mounts) do
+                local mount = INSTANCE_MOUNTS[mountName]
+                local bosses = type(mount.dropsFrom) == "table" and mount.dropsFrom or {mount.dropsFrom}
+                if (mount.instanceDifficulty == INSTANCE_DIFFICULTY.heroic or mount.instanceDifficulty == INSTANCE_DIFFICULTY.mythic or
+                   mount.instanceType == INSTANCE_TYPE.raid or mount.instanceType == INSTANCE_TYPE.world) then
+                    hasLock = true
+                    local instance, instanceDiff
+                    if db.Toons[toonName].instances[zoneName] ~= nil then
+                        if exp == EXPANSION.wod or zoneName == "Siege of Orgrimmar" then
+                            -- special check for change to instance locks
+                            -- Locks for each difficulty, must check for specific difficulty
+                            instanceDiff = mount.instanceDifficulty
+                            instance = db.Toons[toonName].instances[zoneName][instanceDiff]
                         else
-                            for i,bossName in pairs(bosses) do
-                                if bossName == "" and mount.saveCheck then
-                                    bossName = mount.saveCheck -- AQ check
-                                end
-                                if instance.bosses[bossName] then
-                                    killedBosses = killedBosses + 1
-                                end
+                            -- Locked to any difficulty is locked to all
+                            instanceDiff, instance = next(db.Toons[toonName].instances[zoneName])
+                        end
 
-                                if bossName == "" and mount.saveCheck == nil then -- ZA check
-                                    killedBosses = 1
+                        if instance ~= nil then
+                            if instance.resetsAt < time() then -- instance lock is old, remove
+                                db.Toons[toonName].instances[zoneName] = nil
+                            else
+                                for i,bossName in pairs(bosses) do
+                                    if bossName == "" and mount.saveCheck then
+                                        bossName = mount.saveCheck -- AQ check
+                                    end
+                                    if instance.bosses[bossName] then
+                                        killedBosses = killedBosses + 1
+                                    end
+
+                                    if bossName == "" and mount.saveCheck == nil then -- ZA check
+                                        killedBosses = 1
+                                    end
                                 end
                             end
                         end
+                    elseif db.Toons[toonName].worldBosses and db.Toons[toonName].worldBosses[mount.dropsFrom] then
+                        killedBosses = 1
                     end
-                elseif db.Toons[toonName].worldBosses and db.Toons[toonName].worldBosses[mount.dropsFrom] then
-                    killedBosses = 1
                 end
             end
+
+            done = (killedBosses == totalBosses)
+            bossCount = killedBosses.."/"..totalBosses
+        else
+            done = true
         end
 
-        local bossCount = killedBosses.."/"..totalBosses
         if not hasLock then
             bossCount = ""
         end
 
-        local done = (killedBosses == totalBosses)
         if toonName ~= thisToon.name and not hasLock then
             done = true
         end
@@ -779,13 +866,14 @@ local function FillToonColumn(toonName, toonClass, colNum, exp, itype)
         -- if toonName == "Dora - Hyjal" then
         --     done = true
         -- end
-        if hasLock then done = true end
+        if DEBUG_ALL_DONE and hasLock then done = true end
 
         table.insert(tooltipCache[itype][exp][k].toons, {
             value = ClassColorize(toonClass, bossCount),
             done = done,
-            -- hasLock = hasLock,
+            ignore = ignore,
             cellScript = {
+                ignore = ignore,
                 line = false,
                 zoneName = zoneName,
                 mounts = section[zoneName].mounts,
@@ -802,7 +890,7 @@ local function UpdateTooltip(self,elap)
     addon.updatetooltip_throttle = (addon.updatetooltip_throttle or 10) + elap
     if addon.updatetooltip_throttle < 0.5 then return end
     addon.updatetooltip_throttle = 0
-    if not tooltip:IsShown() and tooltip.anchorframe then
+    if tooltip:IsShown() and tooltip.anchorframe then
        core:ShowTooltip(tooltip.anchorframe)
     end
 end
@@ -872,8 +960,6 @@ local function DisplayTooltipFromCache()
 
     RemoveCompletedFromCache()
 
-    -- for _,_ in pairs(db.Toons) do tooltip:AddColumn("CENTER") end
-
     local count = 0
     local toonNum = 0
     local lineNum
@@ -927,7 +1013,9 @@ local function DisplayTooltipFromCache()
                         for _,toon in pairs(v.toons) do
                             toonNum = toonNum + 1
                             local text = toon.value
-                            if toon.done and toon.cellScript.bossStatus ~= "" then
+                            if toon.ignore then
+                                text = "|TInterface\\RAIDFRAME\\ReadyCheck-NotReady:16|t"
+                            elseif toon.done and toon.cellScript.bossStatus ~= "" then
                                 text = "|TInterface\\RAIDFRAME\\ReadyCheck-Ready:16|t"
                             end
                             tooltip:SetCell(lineNum, toonNum+1, text)
@@ -948,14 +1036,14 @@ local function DisplayTooltipFromCache()
         tooltip:AddLine("Looks like you've finished farming all available instances!")
     end
 
-    if db.Config.General.ShowHints then
-        tooltip:AddSeparator(10, 0, 0, 0, 0)
-        local hintLine, hintCol
-        hintLine, hintCol = tooltip:AddLine()
-        tooltip:SetCell(hintLine, hintCol, "|cffffff00Left-click|r to show Blizzard's Raid Information", "LEFT", tooltip:GetColumnCount())
-        hintLine, hintCol = tooltip:AddLine()
-        tooltip:SetCell(hintLine, hintCol, "|cffffff00Right-click|r to open the options menu", "LEFT", tooltip:GetColumnCount())
-    end
+    -- if db.Config.General.ShowHints then
+    --     tooltip:AddSeparator(10, 0, 0, 0, 0)
+    --     local hintLine, hintCol
+    --     hintLine, hintCol = tooltip:AddLine()
+    --     tooltip:SetCell(hintLine, hintCol, "|cffffff00Left-click|r to show Blizzard's Raid Information", "LEFT", tooltip:GetColumnCount())
+    --     hintLine, hintCol = tooltip:AddLine()
+    --     tooltip:SetCell(hintLine, hintCol, "|cffffff00Right-click|r to open the options menu", "LEFT", tooltip:GetColumnCount())
+    -- end
 end
 
 function core:ShowTooltip(anchorframe)
