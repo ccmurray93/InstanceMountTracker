@@ -34,7 +34,7 @@ function module:OnInitialize()
     -- db.Config.Toons = db.Config.Toons and db.Config.Toons or vars.defaultDB.Config.Toons
 
     module:BuildOptions()
-    Config:RegisterOptionsTable(addonName, core.options, { "imt", "instancemounttracker" })
+    Config:RegisterOptionsTable(addonName, core.options, { "mh", "mounthunter" })
 
     local general = ACD:AddToBlizOptions(addonName, nil)
     firstoptiongroup = general
@@ -50,7 +50,7 @@ function module:BuildOptions()
     local opts = {
         type = "group",
         name = addonName,
-        handler = InstanceMountTracker,
+        handler = MountHunter,
         args = {
             General = {
                 order = 1,
@@ -73,7 +73,7 @@ function module:BuildOptions()
                     MinimapIcon = {
                         type = "toggle",
                         name = "Show minimap button",
-                        desc = "Show the InstanceMountTracker minimap button",
+                        desc = "Show the MountHunter minimap button",
                         order = 2.1,
                         hidden = function() return not vars.icon end,
                         get = function(info) return not db.MinimapIcon.hide end,
@@ -118,6 +118,17 @@ function module:BuildOptions()
                         order = 3.3,
                         set = function(info, value)
                                 db.Config.General.SelfAlways = value
+                                addon.alphatoonlist = nil
+                                addon:ClearTooltipCache()
+                            end,
+                    },
+                    SelfOnly = {
+                        type = "toggle",
+                        name = "Show only self",
+                        desc = "Only show current character (Character Filter settings will take precedence)",
+                        order = 3.31,
+                        set = function(info, value)
+                                db.Config.General.SelfOnly = value
                                 addon.alphatoonlist = nil
                                 addon:ClearTooltipCache()
                             end,

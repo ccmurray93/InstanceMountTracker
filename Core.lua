@@ -1,5 +1,5 @@
 local addonName, vars = ...
-InstanceMountTracker = vars
+MountHunter = vars
 local addon = vars
 -- local data = vars.data
 local addonAbbrev = "IMF"
@@ -69,6 +69,7 @@ vars.defaultDB = {
             ShowServer = false,
             SelfFirst = true,
             SelfAlways = false,
+            SelfOnly = false,
             HideRowWhenDone = true,
             HideColumnWhenDone = true,
         },
@@ -90,8 +91,8 @@ vars.defaultDB = {
 
 function core:OnInitialize()
     addon:Debug("OnInitialize")
-    InstanceMountTrackerDB = InstanceMountTrackerDB or vars.defaultDB
-    db = db or InstanceMountTrackerDB
+    MountHunterDB = MountHunterDB or vars.defaultDB
+    db = db or MountHunterDB
     vars.db = db
 
     addon:toonInit()
@@ -744,6 +745,10 @@ end
 
 local function IgnoreToon(toonName, exp, itype)
     if db.Toons[toonName].ignore then
+        return true
+    end
+
+    if db.Config.General.SelfOnly and toonName ~= thisToon.name then
         return true
     end
 
