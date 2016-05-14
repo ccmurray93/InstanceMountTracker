@@ -31,6 +31,7 @@ function module:OnInitialize()
     db = vars.db
     db.Config = db.Config and db.Config or vars.defaultDB.Config
     db.Config.General = db.Config.General and db.Config.General or vars.defaultDB.Config.General
+    -- db.Config.Toons = db.Config.Toons and db.Config.Toons or vars.defaultDB.Config.Toons
 
     module:BuildOptions()
     Config:RegisterOptionsTable(addonName, core.options, { "imf", "instancemountfarmer" })
@@ -113,7 +114,7 @@ function module:BuildOptions()
                     SelfAlways = {
                         type = "toggle",
                         name = "Show self always",
-                        desc = "Always show current character (takes precedence over Character settings)",
+                        desc = "Always show current character (Character Filter settings will take precedence)",
                         order = 3.3,
                         set = function(info, value)
                                 db.Config.General.SelfAlways = value
@@ -276,8 +277,60 @@ function module:BuildOptions()
                     },
                 },
             },
+            ToonFilter = {
+                order = 3,
+                type = "group",
+                name = "Character Filter",
+                -- get = function(info)
+                --         return db.Config.ToonFilter[info[#info]]
+                -- end,
+                -- set = function(info, value)
+                --         -- addon.debug(info[#info].." set to: "..tostring(value))
+                --         db.Config.ToonFilter[info[#info]] = value
+                --         addon:ClearTooltipCache()
+                -- end,
+                args = {
+                    ToonFilterHeader = {
+                        order = 3,
+                        type = "header",
+                        name = "Character Filter",
+                    },
+                    ToonFilterDesc = {
+                        order = 3.1,
+                        type = "description",
+                        name = "The below settings control which characters are ignored when displaying the tooltip. A checked box indicates that the character will not show up in the tooltip. This settings overrides 'Show Self Always'.",
+                    },
+                },
+            },
         },
     }
+
+
+    -- Add toon filters
+    local curOrder = 3.2
+    local toonNum = 0
+    for toonName,toon in pairs(db.Toons) do
+        curOrder = curOrder + 0.01
+        local configSection = {
+            type = "toggle",
+            name = addon:ClassColorize(toon.class, toonName),
+            desc = "Ignore "..toonName.." when showing tooltip",
+            order = curOrder,
+            get = function(info) return db.Toons[toonName].ignore end,
+            set = function(info, value)
+                db.Toons[toonName].ignore = value
+                addon:ClearTooltipCache()
+            end,
+        }
+
+        toonNum = toonNum + 1
+        opts.args.ToonFilter.args["Toon"..tostring(toonNum)] = configSection
+
+    end
+
+
+
+
 
     core.options = opts
 end

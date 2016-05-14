@@ -10,7 +10,7 @@ vars.icon = vars.LDB and LibStub("LibDBIcon-1.0", true)
 
 local QTip = LibStub("LibQTip-1.0")
 
-local DEBUG = true
+local DEBUG = false
 local DEBUG_ALL_MOUNTS = false
 local DEBUG_ALL_DONE = false
 
@@ -69,8 +69,8 @@ vars.defaultDB = {
             ShowServer = false,
             SelfFirst = true,
             SelfAlways = false,
-            HideRowWhenDone = true, -- TODO
-            HideColumnWhenDone = true, -- TODO
+            HideRowWhenDone = true,
+            HideColumnWhenDone = true,
         },
         LevelFilter = {
             ClassicDungMinLevel = 60,
@@ -169,15 +169,16 @@ end
 
 function addon:toonInit()
     local ti = db.Toons[thisToon.name] or {}
-    db.Toons[thisToon.name] = ti
     ti.instances = ti.instances or {}
     ti.worldBosses = ti.worldBosses or {}
     ti.lClass, ti.class = UnitClass("player")
     ti.level = UnitLevel("player")
     ti.faction = thisToon.faction
+    ti.ignore = thisToon.ignore or false
     if ti.weeklyResetsAt == nil or ti.weeklyResetsAt < time() then
         ti.weeklyResetsAt = addon:GetNextWeeklyResetTime()
     end
+    db.Toons[thisToon.name] = ti
 end
 
 function addon:InitCollectedMounts()
@@ -520,19 +521,19 @@ local function ToonIsSaved(toonName, exp, zoneName, instanceDiff, bossName)
     end
 end
 
-local function ColorCodeOpen(color)
+function addon:ColorCodeOpen(color)
     return ColorCodeOpenRGB(color[1] or color.r,
         color[2] or color.g,
         color[3] or color.b,
         color[4] or color.a or 1)
 end
 
-local function ClassColorize(class, targetstring)
+function addon:ClassColorize(class, targetstring)
     local c = RAID_CLASS_COLORS[class]
     if c.colorStr then
         c = "|c"..c.colorStr
     else
-        c = ColorCodeOpen(c)
+        c = addon:ColorCodeOpen(c)
     end
     return c .. targetstring .. FONTEND
 end
@@ -611,7 +612,7 @@ local function InstanceOnEnter(cell, arg, ...)
         else
             toonName = strsplit(" - ", toonName)
         end
-        toonName = ClassColorize(arg.toonClass, toonName)
+        toonName = addon:ClassColorize(arg.toonClass, toonName)
     end
 
     indicatortip:AddHeader(GOLDFONT..zoneName..FONTEND, "", toonName)
@@ -742,6 +743,10 @@ local function AddInstanceRows(exp, itype)
 end
 
 local function IgnoreToon(toonName, exp, itype)
+    if db.Toons[toonName].ignore then
+        return true
+    end
+
     local ignore = false
 
     local toonLevel = db.Toons[toonName].level
@@ -868,7 +873,7 @@ local function FillToonColumn(toonName, toonClass, colNum, exp, itype)
         if DEBUG_ALL_DONE and hasLock then done = true end
 
         table.insert(tooltipCache[itype][exp][k].toons, {
-            value = ClassColorize(toonClass, bossCount),
+            value = addon:ClassColorize(toonClass, bossCount),
             done = done,
             ignore = ignore,
             cellScript = {
@@ -939,7 +944,7 @@ local function RemoveCompletedFromCache()
         if not db.Config.General.HideColumnWhenDone then
             keepToons[t] = true
         end
-        local keep = keepToons[t] or (db.Config.General.SelfAlways and alphaToonList[t] == thisToon.name)
+        local keep = keepToons[t] or (db.Config.General.SelfAlways and alphaToonList[t] == thisToon.name and not db.Toons[thisToon.name].ignore)
         if not keep then
             for _,itype in pairs(itypes) do
                 if tooltipCache[itype] then
@@ -975,7 +980,7 @@ local function DisplayTooltipFromCache()
             else
                 toonName = strsplit(" - ", toonFullName)
             end
-            table.insert(toonList, ClassColorize(db.Toons[toonFullName].class, toonName))
+            table.insert(toonList, addon:ClassColorize(db.Toons[toonFullName].class, toonName))
             tooltip:AddColumn("CENTER")
         end
     end
@@ -1035,14 +1040,14 @@ local function DisplayTooltipFromCache()
         tooltip:AddLine("Looks like you've finished farming all available instances!")
     end
 
-    -- if db.Config.General.ShowHints then
-    --     tooltip:AddSeparator(10, 0, 0, 0, 0)
-    --     local hintLine, hintCol
-    --     hintLine, hintCol = tooltip:AddLine()
-    --     tooltip:SetCell(hintLine, hintCol, "|cffffff00Left-click|r to show Blizzard's Raid Information", "LEFT", tooltip:GetColumnCount())
-    --     hintLine, hintCol = tooltip:AddLine()
-    --     tooltip:SetCell(hintLine, hintCol, "|cffffff00Right-click|r to open the options menu", "LEFT", tooltip:GetColumnCount())
-    -- end
+    if db.Config.General.ShowHints then
+        tooltip:AddSeparator(10, 0, 0, 0, 0)
+        local hintLine, hintCol
+        hintLine, hintCol = tooltip:AddLine()
+        tooltip:SetCell(hintLine, hintCol, "|cffffff00Left-click|r to show Blizzard's Raid Information", "LEFT", tooltip:GetColumnCount())
+        hintLine, hintCol = tooltip:AddLine()
+        tooltip:SetCell(hintLine, hintCol, "|cffffff00Right-click|r to open the options menu", "LEFT", tooltip:GetColumnCount())
+    end
 end
 
 function core:ShowTooltip(anchorframe)
@@ -1051,7 +1056,8 @@ function core:ShowTooltip(anchorframe)
     tooltip = QTip:Acquire(addonName.."Tooltip", 1, "LEFT")
     tooltip:SetCellMarginH(0)
     tooltip.anchorframe = anchorframe
-    tooltip:SetScript("OnUpdate", UpdateTooltip)
+    -- tooltip:SetScript("OnUpdate", UpdateTooltip)
+    tooltip:SetBackdropColor(0.0902, 0.0902, 0.1882, 1)
     tooltip:Clear()
 
     tooltip:SetHeaderFont(core:HeaderFont())
