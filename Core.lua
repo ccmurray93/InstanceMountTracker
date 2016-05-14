@@ -1062,7 +1062,7 @@ function core:ShowTooltip(anchorframe)
     tooltip:SetCellMarginH(0)
     tooltip.anchorframe = anchorframe
     -- tooltip:SetScript("OnUpdate", UpdateTooltip)
-    tooltip:SetBackdropColor(0.0902, 0.0902, 0.1882, 1)
+    -- tooltip:SetBackdropColor(0.0902, 0.0902, 0.1882, 1)
     tooltip:Clear()
 
     tooltip:SetHeaderFont(core:HeaderFont())
