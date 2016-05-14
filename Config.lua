@@ -82,12 +82,12 @@ function module:BuildOptions()
                             vars.icon:Refresh(addonName)
                         end,
                     },
-                    -- ShowHints = {
-                    --     type = "toggle",
-                    --     name = "Show tooltip hints",
-                    --     desc = "Show usage hints at bottom of tooltip",
-                    --     order = 2.2,
-                    -- },
+                    ShowHints = {
+                        type = "toggle",
+                        name = "Show tooltip usage",
+                        desc = "Show usage at bottom of tooltip",
+                        order = 2.2,
+                    },
 
                     CharactersHeader = {
                         order = 3,

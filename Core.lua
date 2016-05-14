@@ -2,7 +2,7 @@ local addonName, vars = ...
 MountHunter = vars
 local addon = vars
 -- local data = vars.data
-local addonAbbrev = "IMF"
+local addonAbbrev = "MH"
 vars.core = LibStub("AceAddon-3.0"):NewAddon(addonName, "AceConsole-3.0", "AceEvent-3.0", "AceTimer-3.0")
 local core = vars.core
 vars.LDB = LibStub("LibDataBroker-1.1", true)
@@ -965,7 +965,7 @@ local function RemoveCompletedFromCache()
 end
 
 local function DisplayTooltipFromCache()
-    tooltip:AddHeader(tooltipCache.header)
+    -- tooltip:AddHeader(tooltipCache.header)
 
     RemoveCompletedFromCache()
 
