@@ -1,5 +1,5 @@
 local addonName, vars = ...
-InstanceMountFarmer = vars
+InstanceMountTracker = vars
 local addon = vars
 -- local data = vars.data
 local addonAbbrev = "IMF"
@@ -90,8 +90,8 @@ vars.defaultDB = {
 
 function core:OnInitialize()
     addon:Debug("OnInitialize")
-    InstanceMountFarmerDB = InstanceMountFarmerDB or vars.defaultDB
-    db = db or InstanceMountFarmerDB
+    InstanceMountTrackerDB = InstanceMountTrackerDB or vars.defaultDB
+    db = db or InstanceMountTrackerDB
     vars.db = db
 
     addon:toonInit()

@@ -34,7 +34,7 @@ function module:OnInitialize()
     -- db.Config.Toons = db.Config.Toons and db.Config.Toons or vars.defaultDB.Config.Toons
 
     module:BuildOptions()
-    Config:RegisterOptionsTable(addonName, core.options, { "imf", "instancemountfarmer" })
+    Config:RegisterOptionsTable(addonName, core.options, { "imt", "instancemounttracker" })
 
     local general = ACD:AddToBlizOptions(addonName, nil)
     firstoptiongroup = general
@@ -50,7 +50,7 @@ function module:BuildOptions()
     local opts = {
         type = "group",
         name = addonName,
-        handler = InstanceMountFarmer,
+        handler = InstanceMountTracker,
         args = {
             General = {
                 order = 1,
@@ -73,7 +73,7 @@ function module:BuildOptions()
                     MinimapIcon = {
                         type = "toggle",
                         name = "Show minimap button",
-                        desc = "Show the InstanceMountFarmer minimap button",
+                        desc = "Show the InstanceMountTracker minimap button",
                         order = 2.1,
                         hidden = function() return not vars.icon end,
                         get = function(info) return not db.MinimapIcon.hide end,
